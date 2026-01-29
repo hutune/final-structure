@@ -69,7 +69,7 @@ get_page_title() {
 # Process each changed file
 for FILE in $CHANGED_FILES; do
   echo ""
-  echo "=== Processing: $FILE ===
+  echo "=== Processing: $FILE ==="
   
   # Determine parent doc ID based on path
   if [[ "$FILE" == docs/team-processes/* ]]; then
