@@ -164,13 +164,62 @@ id: "STORY-1.1"
 epic_id: "EPIC-001"
 title: "Login Page"
 status: "to-do"
+assigned_to: "email@example.com"  # or ["email1", "email2"] for multiple
 clickup_task_id: null
 ---
 ```
 
 ---
 
-## 5. Admin Links
+## 6. Assignee Support
+
+### Email-to-ClickUp-ID Mapping
+
+Workflow tự động map email sang ClickUp User ID. Cấu hình trong workflow file:
+
+```yaml
+EMAIL_TO_CLICKUP_ID: "email1:clickup_id1,email2:clickup_id2"
+```
+
+**Hiện tại đã config:**
+
+| Email | ClickUp User ID |
+|-------|-----------------|
+| `work.huutrung@gmail.com` | `300697285` |
+| `mazhnguyen@kwayvina.com` | `300697285` |
+
+### Auto-Assign (Git Commit Author)
+
+Nếu `assigned_to` trống → tự động gán cho người commit:
+- Git commit author email → ClickUp User ID → Assignee
+
+### Manual Assign (Frontmatter)
+
+**Single assignee:**
+```yaml
+assigned_to: "work.huutrung@gmail.com"
+```
+
+**Multiple assignees** (khi một người nghỉ, người khác làm giúp):
+```yaml
+assigned_to: ["email1@example.com", "email2@example.com"]
+```
+
+### Thêm Team Member Mới
+
+1. Lấy ClickUp User ID từ API:
+   ```bash
+   curl -H "Authorization: pk_xxx" "https://api.clickup.com/api/v2/team" | jq '.teams[0].members'
+   ```
+
+2. Thêm vào `EMAIL_TO_CLICKUP_ID` trong `.github/workflows/sync-clickup.yml`:
+   ```yaml
+   EMAIL_TO_CLICKUP_ID: "existing_mapping,new_email:new_id"
+   ```
+
+---
+
+## 7. Admin Links
 
 - **GitHub Actions**: https://github.com/hutune/demo-structure/actions
 - **ClickUp Space**: https://app.clickup.com/90182277854/v/s/90189438827

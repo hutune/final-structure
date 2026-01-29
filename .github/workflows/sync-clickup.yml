@@ -10,6 +10,9 @@ on:
 env:
   CLICKUP_EPICS_LIST_ID: "901815396322"
   CLICKUP_STORIES_LIST_ID: "901815396340"
+  # Email to ClickUp User ID mapping (add more as needed)
+  # Format: email1:id1,email2:id2
+  EMAIL_TO_CLICKUP_ID: "work.huutrung@gmail.com:300697285,mazhnguyen@kwayvina.com:300697285"
 
 permissions:
   contents: write
@@ -25,12 +28,15 @@ jobs:
           fetch-depth: 2
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get Changed Files
+      - name: Get Changed Files and Commit Author
         id: changed
         run: |
           CHANGED=$(git diff --name-only HEAD^ HEAD 2>/dev/null | grep -E '_bmad-output/(epics|stories)/.*\.md$' | tr '\n' ' ' || echo "")
+          AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')
           echo "files=$CHANGED" >> $GITHUB_OUTPUT
-          echo "Found: $CHANGED"
+          echo "author_email=$AUTHOR_EMAIL" >> $GITHUB_OUTPUT
+          echo "Found files: $CHANGED"
+          echo "Commit author: $AUTHOR_EMAIL"
 
       - name: Sync to ClickUp
         if: steps.changed.outputs.files != ''
@@ -38,8 +44,16 @@ jobs:
           CLICKUP_API_KEY: ${{ secrets.CLICKUP_API_KEY }}
           EPICS_LIST: ${{ env.CLICKUP_EPICS_LIST_ID }}
           STORIES_LIST: ${{ env.CLICKUP_STORIES_LIST_ID }}
+          EMAIL_MAP: ${{ env.EMAIL_TO_CLICKUP_ID }}
+          COMMIT_AUTHOR: ${{ steps.changed.outputs.author_email }}
         run: |
           echo "Starting sync..."
+          
+          # Function to get ClickUp user ID from email
+          get_user_id() {
+            local email="$1"
+            echo "$EMAIL_MAP" | tr ',' '\n' | grep "^$email:" | cut -d':' -f2
+          }
           
           for file in ${{ steps.changed.outputs.files }}; do
             echo "== Processing: $file =="
@@ -55,34 +69,62 @@ jobs:
             STATUS=$(get_field status)
             CU_ID=$(get_field clickup_task_id)
             EPIC=$(get_field epic_id)
+            ASSIGNED=$(get_field assigned_to)
             
-            echo "  Title: $TITLE | Status: $STATUS | CU_ID: $CU_ID"
+            echo "  Title: $TITLE | Status: $STATUS | Assigned: $ASSIGNED"
+            
+            # Build assignees array
+            ASSIGNEES="[]"
+            if [ -n "$ASSIGNED" ]; then
+              # Handle both single value and array format: "email" or ["email1", "email2"]
+              CLEAN_ASSIGNED=$(echo "$ASSIGNED" | tr -d '[]"' | tr ',' '\n')
+              ASSIGNEE_IDS=""
+              for email in $CLEAN_ASSIGNED; do
+                email=$(echo "$email" | xargs) # trim whitespace
+                uid=$(get_user_id "$email")
+                if [ -n "$uid" ]; then
+                  ASSIGNEE_IDS="$ASSIGNEE_IDS$uid,"
+                fi
+              done
+              if [ -n "$ASSIGNEE_IDS" ]; then
+                # Remove trailing comma and format as JSON array
+                ASSIGNEES=$(echo "$ASSIGNEE_IDS" | sed 's/,$//' | tr ',' '\n' | jq -R -s -c 'split("\n") | map(select(length > 0) | tonumber)')
+              fi
+            else
+              # Auto-assign to commit author if no explicit assignee
+              AUTHOR_UID=$(get_user_id "$COMMIT_AUTHOR")
+              if [ -n "$AUTHOR_UID" ]; then
+                ASSIGNEES="[$AUTHOR_UID]"
+                echo "  Auto-assigning to commit author: $COMMIT_AUTHOR -> $AUTHOR_UID"
+              fi
+            fi
+            echo "  Assignees: $ASSIGNEES"
             
             # Set type and list
             if [[ "$file" == *"/epics/"* ]]; then
               TYPE="epic"
               LIST="$EPICS_LIST"
-              case "$STATUS" in to-do) CU_ST="to do";; in-progress) CU_ST="in progress";; done) CU_ST="complete";; *) CU_ST="to do";; esac
+              case "$STATUS" in to-do) CU_ST="to do";; in-progress) CU_ST="in progress";; done) CU_ST="complete";; cancelled) CU_ST="cancelled";; *) CU_ST="to do";; esac
             else
               TYPE="story"
               LIST="$STORIES_LIST"
-              case "$STATUS" in to-do) CU_ST="Open";; in-progress) CU_ST="ready for dev";; scoping) CU_ST="scoping";; in-design) CU_ST="in design";; done) CU_ST="cancelled";; *) CU_ST="Open";; esac
+              case "$STATUS" in to-do) CU_ST="Open";; scoping) CU_ST="scoping";; in-design) CU_ST="in design";; ready-for-dev|in-progress) CU_ST="ready for dev";; cancelled) CU_ST="cancelled";; *) CU_ST="Open";; esac
             fi
             
             # Get description using awk (content after 2nd ---)
             DESC=$(awk 'BEGIN{c=0} /^---$/{c++;next} c>=2{print}' "$file" | head -50)
             
-            # Build full description using printf (avoids multiline quote issues)
+            # Build full description using printf
             if [ -n "$EPIC" ]; then
               FULL_DESC=$(printf "**Epic**: %s\n\n---\n\n%s\n\n---\n_Source: %s_" "$EPIC" "$DESC" "$file")
             else
               FULL_DESC=$(printf "%s\n\n---\n_Source: %s_" "$DESC" "$file")
             fi
             
-            # Build JSON
+            # Build JSON with assignees
             NAME="[$TYPE] $TITLE"
-            JSON=$(jq -n --arg n "$NAME" --arg d "$FULL_DESC" --arg s "$CU_ST" --arg t "$TYPE" \
-              '{name:$n, description:$d, status:$s, tags:["bmad",$t]}')
+            JSON=$(jq -n --arg n "$NAME" --arg d "$FULL_DESC" --arg s "$CU_ST" --arg t "$TYPE" --argjson a "$ASSIGNEES" \
+              '{name:$n, description:$d, status:$s, tags:["bmad",$t], assignees:$a}')
             
             if [ -z "$CU_ID" ]; then
               echo "  Creating task..."
@@ -100,7 +142,7 @@ jobs:
               fi
             else
               echo "  Updating $CU_ID..."
-              UPJSON=$(jq -n --arg n "$NAME" --arg d "$FULL_DESC" --arg s "$CU_ST" '{name:$n,description:$d,status:$s}')
+              UPJSON=$(jq -n --arg n "$NAME" --arg d "$FULL_DESC" --arg s "$CU_ST" --argjson a "$ASSIGNEES" '{name:$n,description:$d,status:$s,assignees:$a}')
               curl -sf -X PUT "https://api.clickup.com/api/v2/task/$CU_ID" \
                 -H "Authorization: $CLICKUP_API_KEY" \
                 -H "Content-Type: application/json" \
