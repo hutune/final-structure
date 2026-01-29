@@ -15,22 +15,16 @@ if [ -z "$API_KEY" ]; then
   exit 1
 fi
 
-# Get changed markdown files in docs/
-# In GitHub Actions, use git diff with proper refs
-if [ -n "$GITHUB_EVENT_BEFORE" ] && [ "$GITHUB_EVENT_BEFORE" != "0000000000000000000000000000000000000000" ]; then
-  # Use before/after commits from GitHub event
-  CHANGED_FILES=$(git diff --name-only $GITHUB_EVENT_BEFORE $GITHUB_SHA -- 'docs/team-processes/**/*.md' 'docs/tech-specs/**/*.md' 2>/dev/null || true)
-else
-  # Fallback: compare with previous commit
-  CHANGED_FILES=$(git diff --name-only HEAD^1 HEAD -- 'docs/team-processes/**/*.md' 'docs/tech-specs/**/*.md' 2>/dev/null || true)
-fi
+# Get all markdown files in docs/ (simpler approach - sync all files on every run)
+echo "📂 Searching for docs to sync..."
+CHANGED_FILES=$(find docs/team-processes docs/tech-specs -name '*.md' -type f 2>/dev/null || true)
 
 if [ -z "$CHANGED_FILES" ]; then
-  echo "✅ No docs changed"
+  echo "✅ No docs found"
   exit 0
 fi
 
-echo "📄 Changed docs:"
+echo "📄 Docs to sync:"
 echo "$CHANGED_FILES"
 
 # Function to extract frontmatter value
