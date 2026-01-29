@@ -10,7 +10,7 @@ on:
 env:
   CLICKUP_EPICS_LIST_ID: "901815396322"
   CLICKUP_STORIES_LIST_ID: "901815396340"
-  EMAIL_TO_CLICKUP_ID: "work.huutrung@gmail.com:300697285,mazhnguyen@kwayvina.com:300697285"
+  EMAIL_TO_CLICKUP_ID: "work.huutrung@gmail.com:300697285,mazhnguyen@kwayvina.com:300697285,leonkenzo1997@gmail.com:107577458,eric@devcrane.com:55771542"
 
 permissions:
   contents: write
