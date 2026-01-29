@@ -69,28 +69,17 @@ jobs:
               case "$STATUS" in to-do) CU_ST="Open";; scoping) CU_ST="scoping";; in-design) CU_ST="in design";; *) CU_ST="Open";; esac
             fi
             
-            
             # Get description using awk (content after 2nd ---)
             DESC=$(awk 'BEGIN{c=0} /^---$/{c++;next} c>=2{print}' "$file" | head -50)
             
-            # Build full description with metadata
+            # Build full description using printf (avoids multiline quote issues)
             if [ -n "$EPIC" ]; then
-              FULL_DESC="**Epic**: ${EPIC}
-
----
-
-${DESC}
-
----
-_Source: ${file}_"
+              FULL_DESC=$(printf "**Epic**: %s\n\n---\n\n%s\n\n---\n_Source: %s_" "$EPIC" "$DESC" "$file")
             else
-              FULL_DESC="${DESC}
-
----
-_Source: ${file}_"
+              FULL_DESC=$(printf "%s\n\n---\n_Source: %s_" "$DESC" "$file")
             fi
             
-            # Build JSON (jq handles multiline strings properly)
+            # Build JSON
             NAME="[$TYPE] $TITLE"
             JSON=$(jq -n --arg n "$NAME" --arg d "$FULL_DESC" --arg s "$CU_ST" --arg t "$TYPE" \
               '{name:$n, description:$d, status:$s, tags:["bmad",$t]}')
@@ -111,7 +100,7 @@ _Source: ${file}_"
               fi
             else
               echo "  Updating $CU_ID..."
-              UPJSON=$(jq -n --arg n "$NAME" --arg d "$DESC" --arg s "$CU_ST" '{name:$n,description:$d,status:$s}')
+              UPJSON=$(jq -n --arg n "$NAME" --arg d "$FULL_DESC" --arg s "$CU_ST" '{name:$n,description:$d,status:$s}')
               curl -sf -X PUT "https://api.clickup.com/api/v2/task/$CU_ID" \
                 -H "Authorization: $CLICKUP_API_KEY" \
                 -H "Content-Type: application/json" \
