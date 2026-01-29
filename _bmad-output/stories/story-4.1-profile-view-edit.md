@@ -2,7 +2,7 @@
 id: "STORY-4.1"
 epic_id: "EPIC-004"
 title: "Profile View & Edit"
-status: "to-do"
+status: "in-progress"
 priority: "high"
 assigned_to: "leonkenzo1997@gmail.com"
 tags: ["frontend", "backend", "auth"]
@@ -44,4 +44,6 @@ clickup_task_id: "86ewdmdjr"
 - [ ] Unit tests
 
 ## Updates
+
+**2026-01-29 14:35** - @Leo: Đã bắt đầu implement API endpoint. Dự kiến xong GET/PUT endpoints trong hôm nay. Có 1 câu hỏi về validation rules cho phone number - cần confirm với PM.
 
