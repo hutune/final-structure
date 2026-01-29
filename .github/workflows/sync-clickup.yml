@@ -201,3 +201,44 @@ jobs:
           git config user.email "action@github.com"
           git add _bmad-output/
           git diff --staged --quiet || { git commit -m "chore: Update ClickUp IDs [skip ci]" && git push; }
+
+      - name: Sync Comments to ClickUp Activity
+        if: steps.changed.outputs.files != ''
+        env:
+          CLICKUP_API_KEY: ${{ secrets.CLICKUP_API_KEY }}
+        run: |
+          echo "Syncing comments to ClickUp Activity..."
+          
+          for file in ${{ steps.changed.outputs.files }}; do
+            # Get ClickUp task ID
+            CU_ID=$(grep "^clickup_task_id:" "$file" | sed 's/^clickup_task_id: *//' | sed 's/^"//;s/"$//' | tr -d '\r')
+            [ -z "$CU_ID" ] || [ "$CU_ID" = "null" ] && continue
+            
+            # Extract new comments from Updates section (lines starting with **)
+            UPDATES_SECTION=$(awk '/^## Updates/,/^## |^---$/' "$file" | grep '^\*\*' || echo "")
+            [ -z "$UPDATES_SECTION" ] && continue
+            
+            # Get existing comments to avoid duplicates
+            EXISTING=$(curl -sf -H "Authorization: $CLICKUP_API_KEY" \
+              "https://api.clickup.com/api/v2/task/$CU_ID/comment" 2>/dev/null | jq -r '.comments[].comment_text' || echo "")
+            
+            echo "$UPDATES_SECTION" | while read -r line; do
+              [ -z "$line" ] && continue
+              
+              # Check if comment already exists
+              COMMENT_TEXT=$(echo "$line" | sed 's/\*\*//g')
+              if echo "$EXISTING" | grep -qF "$COMMENT_TEXT"; then
+                echo "  Comment already exists, skipping"
+                continue
+              fi
+              
+              # Post new comment
+              echo "  Adding comment to $CU_ID..."
+              curl -sf -X POST "https://api.clickup.com/api/v2/task/$CU_ID/comment" \
+                -H "Authorization: $CLICKUP_API_KEY" \
+                -H "Content-Type: application/json" \
+                -d "{\"comment_text\": \"$COMMENT_TEXT\"}" > /dev/null 2>&1 && \
+                echo "  ✓ Comment synced" || echo "  ✗ Failed"
+            done
+          done
+          echo "Comment sync complete"
