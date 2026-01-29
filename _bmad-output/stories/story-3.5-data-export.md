@@ -11,7 +11,7 @@ start_date: "2026-01-30"
 due_date: "2026-02-05"
 time_estimate: 6
 created_at: "2026-01-29"
-updated_at: "2026-01-29T13:55:00"
+updated_at: "2026-01-29T14:00:00"
 clickup_task_id: null
 ---
 

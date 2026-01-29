@@ -35,21 +35,6 @@ jobs:
           echo "author_email=$AUTHOR_EMAIL" >> $GITHUB_OUTPUT
           echo "Found: $CHANGED | Author: $AUTHOR_EMAIL"
 
-      - name: Build Epic Mapping
-        id: epicmap
-        run: |
-          # Build epic_id -> clickup_id mapping from existing files
-          EPIC_MAP=""
-          for f in _bmad-output/epics/*.md 2>/dev/null; do
-            [ -f "$f" ] || continue
-            FM=$(sed -n '2,/^---$/p' "$f" | head -n -1)
-            E_ID=$(echo "$FM" | grep "^id:" | sed 's/^id: *//' | sed 's/^"//;s/"$//' | tr -d '\r')
-            E_CU=$(echo "$FM" | grep "^clickup_task_id:" | sed 's/^clickup_task_id: *//' | sed 's/^"//;s/"$//;s/^null$//' | tr -d '\r')
-            [ -n "$E_ID" ] && [ -n "$E_CU" ] && EPIC_MAP="$EPIC_MAP$E_ID:$E_CU,"
-          done
-          echo "epicmap=$EPIC_MAP" >> $GITHUB_OUTPUT
-          echo "Epic map: $EPIC_MAP"
-
       - name: Sync to ClickUp
         if: steps.changed.outputs.files != ''
         env:
@@ -58,28 +43,43 @@ jobs:
           STORIES_LIST: ${{ env.CLICKUP_STORIES_LIST_ID }}
           EMAIL_MAP: ${{ env.EMAIL_TO_CLICKUP_ID }}
           COMMIT_AUTHOR: ${{ steps.changed.outputs.author_email }}
-          EPIC_MAP: ${{ steps.epicmap.outputs.epicmap }}
         run: |
-          set -e
           echo "Starting sync..."
           
           # Helper functions
           get_user_id() { echo "$EMAIL_MAP" | tr ',' '\n' | grep "^$1:" | cut -d':' -f2 | head -1; }
-          get_epic_cu() { echo "$EPIC_MAP" | tr ',' '\n' | grep "^$1:" | cut -d':' -f2 | head -1; }
           
           date_to_ms() {
-            [ -z "$1" ] || [ "$1" = "null" ] && return
-            date -d "$1" +%s000 2>/dev/null || echo ""
+            if [ -n "$1" ] && [ "$1" != "null" ]; then
+              date -d "$1" +%s000 2>/dev/null || echo ""
+            fi
           }
           
           hours_to_ms() {
-            [ -z "$1" ] || [ "$1" = "null" ] && return
-            echo $(( $1 * 3600000 ))
+            if [ -n "$1" ] && [ "$1" != "null" ]; then
+              echo $(( $1 * 3600000 ))
+            fi
           }
           
           priority_map() {
-            case "$1" in urgent) echo 1;; high) echo 2;; normal) echo 3;; low) echo 4;; esac
+            case "$1" in urgent) echo 1;; high) echo 2;; normal) echo 3;; low) echo 4;; *) echo "";; esac
           }
+          
+          # Build epic mapping: epic_id:clickup_id,...
+          EPIC_MAP=""
+          if ls _bmad-output/epics/*.md 1>/dev/null 2>&1; then
+            for f in _bmad-output/epics/*.md; do
+              FM=$(sed -n '2,/^---$/p' "$f" 2>/dev/null | head -n -1)
+              E_ID=$(echo "$FM" | grep "^id:" | sed 's/^id: *//' | sed 's/^"//;s/"$//' | tr -d '\r')
+              E_CU=$(echo "$FM" | grep "^clickup_task_id:" | sed 's/^clickup_task_id: *//' | sed 's/^"//;s/"$//;s/^null$//' | tr -d '\r')
+              if [ -n "$E_ID" ] && [ -n "$E_CU" ]; then
+                EPIC_MAP="${EPIC_MAP}${E_ID}:${E_CU},"
+              fi
+            done
+          fi
+          echo "Epic map: $EPIC_MAP"
+          
+          get_epic_cu() { echo "$EPIC_MAP" | tr ',' '\n' | grep "^$1:" | cut -d':' -f2 | head -1; }
           
           for file in ${{ steps.changed.outputs.files }}; do
             echo "== Processing: $file =="
@@ -107,9 +107,11 @@ jobs:
               IDS=""
               for email in $CLEAN; do
                 uid=$(get_user_id "$email")
-                [ -n "$uid" ] && IDS="$IDS$uid,"
+                [ -n "$uid" ] && IDS="${IDS}${uid},"
               done
-              [ -n "$IDS" ] && ASSIGNEES=$(echo "$IDS" | sed 's/,$//' | tr ',' '\n' | jq -R -s -c 'split("\n") | map(select(length > 0) | tonumber)')
+              if [ -n "$IDS" ]; then
+                ASSIGNEES=$(echo "$IDS" | sed 's/,$//' | tr ',' '\n' | jq -R -s -c 'split("\n") | map(select(length > 0) | tonumber)')
+              fi
             else
               uid=$(get_user_id "$COMMIT_AUTHOR")
               [ -n "$uid" ] && ASSIGNEES="[$uid]"
@@ -126,7 +128,11 @@ jobs:
             
             # Description
             DESC=$(awk 'BEGIN{c=0} /^---$/{c++;next} c>=2{print}' "$file" | head -50)
-            [ -n "$EPIC" ] && FULL_DESC=$(printf "**Epic**: %s\n\n---\n\n%s\n\n---\n_Source: %s_" "$EPIC" "$DESC" "$file") || FULL_DESC=$(printf "%s\n\n---\n_Source: %s_" "$DESC" "$file")
+            if [ -n "$EPIC" ]; then
+              FULL_DESC=$(printf "**Epic**: %s\n\n---\n\n%s\n\n---\n_Source: %s_" "$EPIC" "$DESC" "$file")
+            else
+              FULL_DESC=$(printf "%s\n\n---\n_Source: %s_" "$DESC" "$file")
+            fi
             
             # Build payload
             NAME="[$TYPE] $TITLE"
@@ -149,7 +155,10 @@ jobs:
             # Link to epic
             if [ "$TYPE" = "story" ] && [ -n "$EPIC" ]; then
               EPIC_CU=$(get_epic_cu "$EPIC")
-              [ -n "$EPIC_CU" ] && PAYLOAD=$(echo "$PAYLOAD" | jq --arg l "$EPIC_CU" '. + {links_to:$l}') && echo "  Linking to $EPIC -> $EPIC_CU"
+              if [ -n "$EPIC_CU" ]; then
+                PAYLOAD=$(echo "$PAYLOAD" | jq --arg l "$EPIC_CU" '. + {links_to:$l}')
+                echo "  Linking to $EPIC -> $EPIC_CU"
+              fi
             fi
             
             if [ -z "$CU_ID" ]; then
@@ -159,7 +168,12 @@ jobs:
                 -d "$PAYLOAD" 2>&1) || { echo "  Error: $RES"; continue; }
               
               NEW_ID=$(echo "$RES" | jq -r '.id // empty')
-              [ -n "$NEW_ID" ] && { echo "  Created: $NEW_ID"; sed -i "s/^clickup_task_id:.*/clickup_task_id: \"$NEW_ID\"/" "$file"; } || echo "  Failed: $RES"
+              if [ -n "$NEW_ID" ]; then
+                echo "  Created: $NEW_ID"
+                sed -i "s/^clickup_task_id:.*/clickup_task_id: \"$NEW_ID\"/" "$file"
+              else
+                echo "  Failed: $RES"
+              fi
             else
               echo "  Updating $CU_ID..."
               UP=$(echo "$PAYLOAD" | jq 'del(.links_to)')
