@@ -26,7 +26,7 @@ if [ -f "README.md" ]; then
 fi
 
 # Add docs from team-processes and tech-specs
-DOCS_FILES=$(find docs/team-processes docs/tech-specs -name '*.md' -type f 2>/dev/null || true)
+DOCS_FILES=$(find docs/team-processes docs/tech-specs docs/bmad_onboarding -name '*.md' -type f 2>/dev/null || true)
 if [ -n "$DOCS_FILES" ]; then
   CHANGED_FILES="$CHANGED_FILES $DOCS_FILES"
 fi
@@ -209,6 +209,14 @@ for FILE in $CHANGED_FILES; do
   elif [[ "$FILE" == docs/tech-specs/* ]]; then
     DOC_ID="$TECH_SPECS_DOC_ID"
     echo "📂 Target: Tech Specs & Architecture"
+  elif [[ "$FILE" == docs/bmad_onboarding/* ]]; then
+    # For bmad_onboarding, get parent doc ID from frontmatter
+    DOC_ID=$(get_frontmatter_value "$FILE" "clickup_parent_doc_id")
+    if [ -z "$DOC_ID" ] || [ "$DOC_ID" == "null" ]; then
+      echo "⚠️  Skipping (no clickup_parent_doc_id in frontmatter)"
+      continue
+    fi
+    echo "📂 Target: BMAD Onboarding Doc ($DOC_ID)"
   else
     echo "⚠️  Skipping (unknown folder)"
     continue
