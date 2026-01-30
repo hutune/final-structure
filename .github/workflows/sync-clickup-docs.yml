@@ -7,6 +7,7 @@ on:
       - 'README.md'
       - 'docs/team-processes/**/*.md'
       - 'docs/tech-specs/**/*.md'
+      - 'docs/bmad_onboarding/**/*.md'
 
 env:
   CLICKUP_WORKSPACE_ID: "90182277854"
