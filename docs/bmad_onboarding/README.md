@@ -1,6 +1,5 @@
 ---
 clickup_workspace_id: "90182277854"
-clickup_folder_id: "2kzmgppy-1737"
 type: "doc"
 title: "BMAD Onboarding"
 ---
