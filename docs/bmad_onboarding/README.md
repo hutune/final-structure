@@ -173,6 +173,21 @@ Deep dive vào BMAD internals, architecture, và customization.
 
 ---
 
+### **05-references/** - Tài Liệu Tham Khảo
+Best practices và commands reference.
+
+| File | Mô Tả | Thời Gian Đọc |
+|------|-------|---------------|
+| `01-best-practices-by-role.md` | Best practices cho từng role (PM, Dev, Architect, etc.) | 10 phút |
+| `02-commands-reference.md` | Tất cả commands với phases và use cases | 15 phút |
+
+**Bạn sẽ học được**:
+- Best practices cho từng role trong team
+- Danh sách đầy đủ tất cả commands
+- Khi nào dùng command nào
+
+---
+
 ## 🚀 Quick Start
 
 ### **Nếu Bạn Chỉ Có 5 Phút**

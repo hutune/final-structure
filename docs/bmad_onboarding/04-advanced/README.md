@@ -138,10 +138,10 @@ _bmad/
 |--------|-------|--------|
 | Overview | 1 | ✅ Complete |
 | Config | 1 | ✅ Complete |
-| Core | 8 | 🚧 Planned |
-| BMM | 30+ | 🚧 In Progress |
+| Core | 1 | ✅ Complete |
+| BMM | 3 | ✅ Complete |
 
-**Total**: ~43 documentation files when complete
+**Total**: 6 documentation files
 
 ---
 
