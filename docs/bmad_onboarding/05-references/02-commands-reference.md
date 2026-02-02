@@ -2,7 +2,7 @@
 clickup_workspace_id: "90182277854"
 type: "page"
 title: "Commands Reference"
-clickup_parent_doc_id: "2kzmgppy-1823"
+clickup_parent_doc_id: "2kzmgppy-2038"
 ---
 
 # 📋 BMAD Commands Reference
