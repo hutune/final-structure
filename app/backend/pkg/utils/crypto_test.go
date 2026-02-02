@@ -7,6 +7,8 @@ import (
 )
 
 func TestEncryptDecryptString(t *testing.T) {
+	// Use test-only placeholder key (exactly 16 bytes for AES-128); never use real secrets in tests.
+	testKey := "testkey16bytes!!"
 	tests := []struct {
 		name    string
 		key     string
@@ -14,17 +16,17 @@ func TestEncryptDecryptString(t *testing.T) {
 	}{
 		{
 			name:    "Normal string",
-			key:     "0123456789abcdef",
+			key:     testKey,
 			content: "hello world",
 		},
 		{
 			name:    "Empty string",
-			key:     "0123456789abcdef",
+			key:     testKey,
 			content: "",
 		},
 		{
 			name:    "Special characters",
-			key:     "0123456789abcdef",
+			key:     testKey,
 			content: "!@#$%^&*()",
 		},
 	}
@@ -67,13 +69,14 @@ func TestBase64StringOperations(t *testing.T) {
 }
 
 func TestPasswordHashing(t *testing.T) {
+	// Use test-only placeholder values; never use real passwords in tests.
 	tests := []struct {
 		name     string
 		password string
 	}{
 		{
 			name:     "Normal password",
-			password: "myPassword123",
+			password: "test-password-placeholder",
 		},
 		{
 			name:     "Empty password",
@@ -81,7 +84,7 @@ func TestPasswordHashing(t *testing.T) {
 		},
 		{
 			name:     "Complex password",
-			password: "P@ssw0rd!@#$%^&*()",
+			password: "test-complex-placeholder!",
 		},
 	}
 
@@ -96,7 +99,7 @@ func TestPasswordHashing(t *testing.T) {
 			assert.True(t, isValid)
 
 			// Verify wrong password fails
-			isValid = ComparePassword("wrongpassword", hash)
+			isValid = ComparePassword("wrong-placeholder", hash)
 			assert.False(t, isValid)
 		})
 	}
