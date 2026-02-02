@@ -52,7 +52,7 @@ The platform integrates:
 |----------|-------------|
 | **Frontend** | Flutter Web |
 | **Backend** | Golang, Kubernetes, OpenAPI |
-| **AI/Automation** | BMAD Method (47 workflows), Claude Code, 10 Specialized Agents |
+| **AI/Automation** | BMAD Method v6.0.0-Beta.5 (25 workflows), Claude Code, 10 Specialized Agents |
 | **Project Management** | ClickUp (Task & Doc Sync) |
 | **CI/CD** | GitHub Actions |
 | **Development** | Node.js ≥18, Python ≥3.9 |
@@ -89,25 +89,33 @@ git config user.email "your.email@kwayvina.com"
 
 **Step 3: Verify Setup**
 ```bash
-# Test BMAD commands (in VS Code)
-# Type '@bmad-' in command palette to see all 47 workflows
+# Test BMAD commands (in Claude Code)
+# Type '/' to see commands organized by role: ba-, pm-, arch-, dev-be-, dev-fe-, qa-
 ```
 
 ### For Existing Team Members
 
-Start working immediately with BMAD workflows:
+Start working immediately with BMAD workflows (organized by role):
 ```bash
-# Planning
-@bmad-bmm-create-prd           # Create Product Requirements
-@bmad-bmm-create-architecture  # Design Architecture
+# BA (Business Analyst)
+/ba-create-brief               # Create product brief
+/ba-create-stories             # Create epics and stories
 
-# Development
-@bmad-bmm-dev-story            # Implement user story
-@bmad-bmm-code-review          # AI code review
+# PM (Product Manager)
+/pm-create-prd                 # Create PRD
+/pm-sprint-planning            # Sprint planning
 
-# Quality
-@testarch-test-design          # Test planning
-@testarch-trace                # Coverage analysis
+# Architect
+/arch-create                   # Create architecture
+/arch-diagram                  # Create diagrams
+
+# Developer
+/dev-be-story                  # Implement user story
+/dev-be-review                 # Code review
+/dev-fe-ux                     # Create UX design
+
+# QA
+/qa-automate                   # QA automation
 ```
 
 ---
@@ -115,65 +123,51 @@ Start working immediately with BMAD workflows:
 ## 📂 Project Structure
 
 ```
-RMN/
-│
-├── .agent/                         # BMAD Method Infrastructure
-│   └── workflows/                  # 47 development workflows
-│       ├── bmad-bmm-*.md           # Core BMAD workflows
-│       ├── create-*.md             # Creation workflows (PRD, Architecture, etc.)
-│       ├── dev-*.md                # Development workflows
-│       └── testarch-*.md           # Testing & quality workflows
+demo-structure/
 │
 ├── .claude/                        # Claude Code Configuration
-│   ├── PROJECT-CONFIG.md           # Project context for AI
-│   ├── agents/                     # Specialized AI agents (1)
-│   ├── commands/                   # Custom commands
+│   ├── agents/                     # Custom AI agents
+│   ├── commands/                   # 41 slash commands (organized by role)
+│   │   ├── ba-*.md                 # BA commands (4)
+│   │   ├── pm-*.md                 # PM commands (5)
+│   │   ├── arch-*.md               # Architect commands (6)
+│   │   ├── dev-be-*.md             # Backend Dev commands (5)
+│   │   ├── dev-fe-*.md             # Frontend Dev commands (3)
+│   │   ├── qa-*.md                 # QA commands (1)
+│   │   └── bmad-*.md               # General/Agent commands (17)
 │   ├── hooks/                      # Automation hooks
 │   ├── scripts/                    # Helper scripts
+│   │   └── setup.sh                # Development setup
 │   └── skills/                     # Reusable AI skills
+│       └── ui-ux-pro-max/          # UI/UX design skill
 │
 ├── .github/                        # GitHub Configuration
 │   ├── workflows/                  # CI/CD Automation
 │   │   ├── sync-clickup-docs.yml   # Auto-sync docs to ClickUp
 │   │   └── sync-clickup-tasks.yml  # Auto-sync tasks to ClickUp
 │   └── scripts/                    # CI helper scripts
-│       └── sync-docs.sh            # Doc sync script
 │
-├── _bmad/                          # BMAD Framework Core (303 files)
-│   ├── agents/                     # 10 specialized agents
-│   ├── workflows/                  # Workflow implementations
-│   ├── templates/                  # Document templates
-│   └── skills/                     # Reusable capabilities
+├── _bmad/                          # BMAD Framework Core v6.0.0-Beta.5
+│   ├── _config/                    # Configuration files
+│   ├── _memory/                    # Project memory/state
+│   ├── bmm/                        # BMM Module (workflows, agents, tasks)
+│   │   ├── agents/                 # 10 specialized agents
+│   │   ├── tasks/                  # Task definitions
+│   │   └── workflows/              # Workflow implementations
+│   └── core/                       # Core framework
 │
 ├── _bmad-output/                   # Generated Artifacts
-│   ├── epics/                      # Product epics (auto-synced)
-│   ├── stories/                    # User stories (auto-synced)
-│   ├── planning-artifacts/         # Architecture docs, PRDs
 │   ├── implementation-artifacts/   # Tech specs, designs
-│   ├── reports/                    # Quality reports, retrospectives
-│   └── templates/                  # Output templates (3 files)
-│       ├── epic-template.md
-│       ├── story-template.md
-│       └── report-template.md
+│   ├── planning-artifacts/         # Architecture docs, PRDs
+│   └── templates/                  # Output templates
 │
 ├── docs/                           # Project Documentation
-│   ├── team-processes/             # Process & Workflow Guides (5 docs)
-│   │   ├── developer-setup-guide.md
-│   │   ├── clickup-workflow-guide.md
-│   │   ├── clickup-api-reference.md
-│   │   ├── tasks-api-examples.md
-│   │   └── test-automation-guide.md
-│   │
-│   ├── tech-specs/                 # Technical Specifications
-│   │   └── [Architecture decisions, API specs, etc.]
-│   │
-│   └── bmad_onboarding/            # BMAD Framework Docs (13 docs)
-│       └── [Deep dive into BMAD workflows and agents]
-│
-├── src/                            # Source Code (Future)
-│   ├── backend/                    # Golang backend
-│   ├── frontend/                   # Flutter web
-│   └── shared/                     # Shared libraries
+│   ├── bmad_onboarding/            # BMAD Framework Docs (15 files)
+│   └── team-processes/             # Process & Workflow Guides (6 docs)
+│       ├── bmad-team-guide.md      # BMAD usage by role
+│       ├── developer-setup-guide.md
+│       ├── clickup-workflow-guide.md
+│       └── ...
 │
 ├── .gitignore                      # Git ignore rules
 └── README.md                       # This file
@@ -183,16 +177,13 @@ RMN/
 
 | Directory | Purpose | Auto-Generated | Synced to ClickUp |
 |-----------|---------|----------------|-------------------|
-| `.agent/workflows/` | BMAD workflow definitions | ❌ | ❌ |
-| `.claude/` | AI configuration & context | ❌ | ❌ |
+| `.claude/commands/` | Slash commands by role | ❌ | ❌ |
+| `.claude/skills/` | AI skills (ui-ux-pro-max) | ❌ | ❌ |
 | `.github/workflows/` | CI/CD automation | ❌ | ❌ |
 | `_bmad/` | BMAD framework core | ❌ | ❌ |
-| `_bmad-output/epics/` | Product epics | ✅ | ✅ (Tasks) |
-| `_bmad-output/stories/` | User stories | ✅ | ✅ (Tasks) |
 | `_bmad-output/planning-artifacts/` | PRDs, Architecture | ✅ | ❌ |
 | `_bmad-output/implementation-artifacts/` | Tech specs, designs | ✅ | ❌ |
 | `docs/team-processes/` | Process guides | ❌ | ✅ (Docs) |
-| `docs/tech-specs/` | Technical specs | ❌ | ✅ (Docs) |
 | `docs/bmad_onboarding/` | BMAD learning | ❌ | ❌ |
 
 ---
@@ -203,19 +194,19 @@ RMN/
 
 ```bash
 # 1. Create Product Requirements Document
-@bmad-bmm-create-prd
+/pm-create-prd
 # → Generates: _bmad-output/planning-artifacts/prd.md
 
 # 2. Design System Architecture
-@bmad-bmm-create-architecture
+/arch-create
 # → Generates: _bmad-output/planning-artifacts/architecture.md
 
 # 3. Create UX Design (if UI exists)
-@bmad-bmm-create-ux-design
+/dev-fe-ux
 # → Generates: _bmad-output/planning-artifacts/ux-design.md
 
 # 4. Break Down into Epics & Stories
-@bmad-bmm-create-epics-and-stories
+/ba-create-stories
 # → Generates: _bmad-output/epics/*.md, _bmad-output/stories/*.md
 ```
 
@@ -223,36 +214,25 @@ RMN/
 
 ```bash
 # 1. Implement a User Story
-@bmad-bmm-dev-story
+/dev-be-story
 # → Follows story acceptance criteria
 # → Creates code, tests, documentation
 
 # 2. Run AI Code Review
-@bmad-bmm-code-review
+/dev-be-review
 # → Adversarial review finding 3-10 issues
 # → Can auto-fix with approval
 
 # 3. Test Planning & Execution
-@testarch-test-design          # Design test strategy
-@testarch-atdd                 # Create acceptance tests
-@testarch-automate             # Expand test coverage
+/qa-automate                   # QA automation
 ```
 
 ### Phase 3: Quality & Release
 
 ```bash
-# 1. Coverage Analysis
-@testarch-trace
-# → Generates traceability matrix
-# → Quality gate decision (PASS/FAIL)
-
-# 2. Non-Functional Testing
-@testarch-nfr
-# → Performance, security, reliability checks
-
-# 3. CI/CD Quality Pipeline
-@testarch-ci
-# → Configure automated testing in CI/CD
+# Quality check
+/arch-check-readiness
+# → Implementation readiness check
 ```
 
 ### Phase 4: Continuous Sync (Automatic)
@@ -293,6 +273,7 @@ git push origin main
 |----------|---------|----------|-------------------|
 | **Project Overview** | This file, high-level intro | [README.md](README.md) | ✅ Standalone Doc |
 | **Developer Setup** | Complete onboarding guide | [developer-setup-guide.md](docs/team-processes/developer-setup-guide.md) | ✅ Team Processes |
+| **BMAD Team Guide** | How to use BMAD by role | [bmad-team-guide.md](docs/team-processes/bmad-team-guide.md) | ✅ Team Processes |
 | **ClickUp Workflow** | ClickUp integration guide | [clickup-workflow-guide.md](docs/team-processes/clickup-workflow-guide.md) | ✅ Team Processes |
 | **ClickUp API Reference** | API endpoints & examples | [clickup-api-reference.md](docs/team-processes/clickup-api-reference.md) | ✅ Team Processes |
 | **Task API Examples** | Task sync examples | [tasks-api-examples.md](docs/team-processes/tasks-api-examples.md) | ✅ Team Processes |
@@ -568,11 +549,11 @@ Each agent has domain expertise:
 | **Version** | 1.0.0 |
 | **Status** | Active Development |
 | **Created** | January 2026 |
-| **Last Updated** | January 29, 2026 |
+| **Last Updated** | February 2, 2026 |
 | **Maintainer** | Mazh Nguyen (work.huutrung@gmail.com) |
 | **ClickUp Workspace** | 90182277854 |
 | **Repository** | [hutune/demo-structure](https://github.com/hutune/demo-structure) |
-| **BMAD Version** | 6.0.0-alpha.23 |
+| **BMAD Version** | 6.0.0-Beta.5 |
 
 ---
 
