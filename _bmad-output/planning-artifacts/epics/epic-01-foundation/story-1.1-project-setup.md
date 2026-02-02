@@ -4,7 +4,7 @@ epic_id: "EPIC-001"
 title: "Project Setup & API Gateway Foundation"
 status: "to-do"
 priority: "critical"
-assigned_to: null
+assigned_to: "Leo <leonkenzo1997@gmail.com>"
 tags: ["backend", "gateway", "setup"]
 story_points: 5
 sprint: null
