@@ -52,6 +52,12 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# YAML Config (sensitive files)
+config.local.yaml
+config.production.yaml
+**/config/config.local.yaml
+**/config/config.production.yaml
+
 # Temporary files
 tmp/
 temp/

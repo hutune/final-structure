@@ -458,9 +458,94 @@ services/{service-name}/
 
 ---
 
-## 4. Tech Stack
+## 4. Configuration Management
 
-### 4.1 Core Technologies
+### 4.1 Quyết định: YAML thay vì .env
+
+**Lý do chọn YAML:**
+
+| Aspect | YAML | .env |
+|--------|------|------|
+| **Cấu trúc** | Nested, hierarchical | Flat key=value |
+| **Type safety** | Arrays, objects, numbers | Chỉ strings |
+| **Comments** | Có (inline & block) | Hạn chế |
+| **Validation** | Dễ validate schema | Khó hơn |
+| **Readability** | Dễ đọc với config phức tạp | Khó với nhiều config |
+
+### 4.2 File Structure
+
+```
+services/{service-name}/config/
+├── config.yaml              # Base config (committed)
+├── config.development.yaml  # Local dev (gitignore optional)
+├── config.staging.yaml      # Staging (committed)
+└── config.production.yaml   # Production (secrets manager)
+```
+
+### 4.3 Load Order
+
+```
+1. config.yaml           (base defaults)
+2. config.{APP_ENV}.yaml (environment-specific)
+3. Environment Variables (override sensitive data)
+```
+
+### 4.4 Environment Variable Override
+
+Format: `SECTION_KEY` (uppercase, underscore-separated)
+
+| YAML Path | Environment Variable |
+|-----------|---------------------|
+| `database.password` | `DATABASE_PASSWORD` |
+| `redis.password` | `REDIS_PASSWORD` |
+| `token.secret` | `TOKEN_SECRET` |
+| `http_server.port` | `HTTP_SERVER_PORT` |
+
+### 4.5 Sensitive Data Handling
+
+**Rule: KHÔNG commit sensitive data vào YAML files**
+
+| Data Type | Storage |
+|-----------|---------|
+| DB Password | Env var / K8s Secret |
+| API Keys | Env var / K8s Secret |
+| JWT Secret | Env var / K8s Secret |
+| OAuth Secrets | Env var / Vault |
+
+**Kubernetes Secret injection:**
+```yaml
+# values.yaml (Helm)
+env:
+  - name: DATABASE_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: db-credentials
+        key: password
+```
+
+### 4.6 Usage in Go Services
+
+```go
+// internal/common/config.go
+type Config struct {
+    config.BaseConfig `yaml:",inline"`
+    Token             TokenConfig `yaml:"token"`
+    // Service-specific configs
+}
+
+// main.go
+func main() {
+    var cfg Config
+    config.MustLoadConfig(config.GetConfigPath(), &cfg)
+    // ...
+}
+```
+
+---
+
+## 5. Tech Stack
+
+### 5.1 Core Technologies (continued from section 4)
 
 | Category | Technology | Version | Purpose |
 |----------|------------|---------|---------|

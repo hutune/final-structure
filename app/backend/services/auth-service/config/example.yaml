@@ -1,0 +1,57 @@
+app:
+  name: 
+  version: 
+
+http_server:
+  host: 
+  port: 
+  grpc_port: 
+  allow_origins: 
+  allow_methods: 
+  allow_headers: 
+  mode: 
+  log_level: 
+
+grpc_client:
+  addr_store_info: 
+
+logger:
+  level: 
+
+cockroach_db:
+  host: 
+  port: 
+  user: 
+  password: 
+  db_name: 
+  ssl_mode: 
+  max_open_conns: 
+  max_idle_conns: 
+  conn_max_lifetime: 
+  log_level: 
+
+token:
+  secret: 
+  access_token_expiration_time: 
+  refresh_token_expiration_time: 
+
+redis:
+  host: 
+  port: 
+  password: 
+
+kafka:
+  brokers: 
+  client_id: 
+  group_id: 
+  auto_offset_reset: 
+  enable_auto_commit: 
+  max_poll_interval_ms: 
+  session_timeout_ms: 
+  heartbeat_interval_ms: 
+  retry_backoff_ms: 
+  fetch_min_bytes: 
+  fetch_wait_max_ms: 
+  schema_registry_url: 
+  topic_auto_creates: 
+  producer_compression_type: 

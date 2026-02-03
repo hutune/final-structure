@@ -1,0 +1,9 @@
+replicaCount: 2
+env: prd
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
