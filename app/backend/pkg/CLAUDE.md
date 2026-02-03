@@ -7,7 +7,7 @@
 
 | Package | Purpose |
 |---------|---------|
-| `config/` | Viper-based config loading |
+| `config/` | YAML config loading with env var override |
 | `database/` | CockroachDB connection, Goose migrations |
 | `redis/` | Redis client wrapper |
 | `kafka/` | Kafka publisher/subscriber |
@@ -18,6 +18,26 @@
 | `logger/` | Zerolog wrapper |
 | `httpserver/` | HTTP server setup |
 | `utils/` | Utility functions |
+
+## Config Package Usage
+
+```go
+// Define service config struct
+type Config struct {
+    config.BaseConfig `yaml:",inline"`
+    Token TokenConfig `yaml:"token"`
+}
+
+// Load config
+var cfg Config
+config.MustLoadConfig(config.GetConfigPath(), &cfg)
+```
+
+**Load order:** `config.yaml` → `config.{APP_ENV}.yaml` → Environment Variables
+
+**Env var override format:** `SECTION_KEY` (uppercase)
+- `database.password` → `DATABASE_PASSWORD`
+- `http_server.port` → `HTTP_SERVER_PORT`
 
 ## Usage in services
 ```go
