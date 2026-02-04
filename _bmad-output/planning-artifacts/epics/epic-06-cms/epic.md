@@ -7,7 +7,7 @@ assigned_to: null
 tags: ["epic", "backend", "cms", "content"]
 start_date: null
 due_date: null
-clickup_task_id: "86ewgd1p9"
+clickup_task_id: null
 ---
 
 # Content Management System

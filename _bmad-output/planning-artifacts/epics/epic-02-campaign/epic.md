@@ -7,7 +7,7 @@ assigned_to: null
 tags: ["epic", "backend", "campaign"]
 start_date: null
 due_date: null
-clickup_task_id: "86ewgd1nj"
+clickup_task_id: null
 ---
 
 # Campaign Management Service

@@ -7,7 +7,7 @@ assigned_to: null
 tags: ["epic", "backend", "foundation", "auth"]
 start_date: null
 due_date: null
-clickup_task_id: "86ewgd1nd"
+clickup_task_id: null
 ---
 
 # Project Foundation & Authentication
