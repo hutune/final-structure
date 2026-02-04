@@ -72,11 +72,24 @@ jobs:
           }
           
           hours_to_ms() {
-            if [ -n "$1" ] && [ "$1" != "null" ]; then
-              echo $(( $1 * 3600000 ))
+            if [ -z "$1" ] || [ "$1" = "null" ]; then
+              return
+            fi
+            # Convert time formats: 2d → 48h, 1w → 168h
+            local val="$1"
+            if [[ "$val" =~ ^([0-9]+)d$ ]]; then
+              val=$(( ${BASH_REMATCH[1]} * 24 ))  # days to hours
+            elif [[ "$val" =~ ^([0-9]+)w$ ]]; then
+              val=$(( ${BASH_REMATCH[1]} * 168 ))  # weeks to hours
+            elif [[ "$val" =~ ^([0-9]+)h$ ]]; then
+              val="${BASH_REMATCH[1]}"  # extract hours
+            fi
+            # Validate it's a number
+            if [[ "$val" =~ ^[0-9]+$ ]]; then
+              echo $(( val * 3600000 ))
             fi
           }
-                    priority_map() {
+          priority_map() {
               case "$1" in critical|urgent) echo 1;; high) echo 2;; normal) echo 3;; low) echo 4;; *) echo "";; esac
             }
           
