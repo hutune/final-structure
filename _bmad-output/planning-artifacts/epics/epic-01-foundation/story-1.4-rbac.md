@@ -24,12 +24,20 @@ clickup_task_id: null
 
 ## Acceptance Criteria
 
+### Core Authorization
 - [x] Request có valid JWT với role "advertiser" được access `/api/v1/campaigns/*`
 - [x] Request có valid JWT với role "supplier" bị reject khi access `/api/v1/admin/*` (403)
 - [x] Request không có JWT bị reject với 401 Unauthorized
 - [x] Request có expired JWT bị reject với 401
 - [x] Request có invalid JWT bị reject với 401
 - [x] User context được extract và forward to downstream services
+
+### Advanced Authorization (NEW)
+- [ ] **Token Revocation Check**: Middleware kiểm tra token có trong blacklist không (Redis)
+- [ ] **Role Change Handling**: Khi admin đổi role user → tokens cũ bị invalidate
+- [ ] **Resource Ownership**: User chỉ access được resources của mình (không access campaign của user khác)
+- [ ] **Rate Limit per User**: Giới hạn API calls per user (không chỉ per IP)
+- [ ] **Admin Permission Inheritance**: Admin có tất cả quyền của advertiser + supplier
 
 ## Implementation Notes
 
@@ -93,6 +101,18 @@ func RequireRole(roles ...string) func(http.Handler) http.Handler {
 - `X-User-Email`: Email from token
 - `X-User-Role`: Role from token
 
+## Edge Cases Table
+
+| Edge Case | Expected Behavior | Status |
+|-----------|-------------------|--------|
+| Token expired giữa request | Return 401, client refresh token | To-do |
+| Role thay đổi sau khi token issued | Check Redis cho role version, invalidate nếu mismatch | To-do |
+| Access resource của user khác | Return 403 "Access denied to this resource" | To-do |
+| Token trong blacklist | Return 401 "Token revoked" | To-do |
+| Missing Authorization header | Return 401 "Authorization header required" | To-do |
+| Malformed token format | Return 401 "Invalid token format" | To-do |
+| User account suspended sau login | Return 403 "Account suspended" on next request | To-do |
+
 ## Checklist (Subtasks)
 
 - [ ] Implement token extraction from Authorization header
@@ -100,10 +120,16 @@ func RequireRole(roles ...string) func(http.Handler) http.Handler {
 - [ ] Implement RequireAuth middleware
 - [ ] Implement RequireRole middleware
 - [ ] Implement user context forwarding
+- [ ] Implement token blacklist check (Redis lookup)
+- [ ] Implement role version check for invalidation
+- [ ] Implement resource ownership validation helper
+- [ ] Implement per-user rate limiting
 - [ ] Configure route groups với role requirements
 - [ ] Unit tests cho auth middleware
 - [ ] Test unauthorized access scenarios
 - [ ] Test forbidden access scenarios
+- [ ] Test token revocation scenarios
+- [ ] Test resource ownership scenarios
 
 ## Updates
 

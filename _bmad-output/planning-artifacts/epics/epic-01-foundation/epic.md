@@ -25,12 +25,16 @@ Thiết lập nền tảng project với API Gateway, middleware stack, và Auth
 
 ## User Stories
 
-| ID | Title | Status | Assignee |
-|----|-------|--------|----------|
-| STORY-1.1 | Project Setup & API Gateway Foundation | to-do | - |
-| STORY-1.2 | Middleware Stack Implementation | to-do | - |
-| STORY-1.3 | JWT Authentication Service | to-do | - |
-| STORY-1.4 | Role-Based Authorization Middleware | to-do | - |
+| ID | Title | Status | Assignee | Priority |
+|----|-------|--------|----------|----------|
+| STORY-1.1 | Project Setup & API Gateway Foundation | doing | Leo | Critical |
+| STORY-1.2 | Middleware Stack Implementation | doing | Leo | Critical |
+| STORY-1.3 | JWT Authentication Service | doing | Leo | Critical |
+| STORY-1.4 | Role-Based Authorization Middleware | doing | Leo | Critical |
+| STORY-1.5 | Password Reset Flow | to-do | - | High |
+| STORY-1.6 | Email Verification Flow | to-do | - | Medium |
+| STORY-1.7 | User Profile Management | to-do | - | Medium |
+| STORY-1.8 | Infrastructure & DevOps Setup | to-do | - | High |
 
 ## Success Metrics
 
@@ -39,6 +43,10 @@ Thiết lập nền tảng project với API Gateway, middleware stack, và Auth
 - JWT authentication hoạt động với token expiry 24h
 - Rate limiting block requests vượt quá 100/min
 - Role-based access control hoạt động đúng
+- Password reset flow hoàn chỉnh
+- Email verification functional
+- User profile CRUD hoạt động
+- Local dev environment setup trong < 5 phút
 
 ## Dependencies
 
@@ -47,9 +55,11 @@ Thiết lập nền tảng project với API Gateway, middleware stack, và Auth
 ## Tech Stack
 
 - Golang
-- JWT (HMAC-SHA256)
+- JWT (HMAC-SHA256) / PASETO
 - Viper (config management)
-- PostgreSQL
+- CockroachDB (PostgreSQL compatible)
+- Redis (token blacklist, rate limiting, sessions)
+- Docker & Docker Compose (local dev)
 
 ## Updates
 
