@@ -67,3 +67,5 @@ Thiết lập nền tảng project với API Gateway, middleware stack, và Auth
 Progress updates will be added here.
 Format: **YYYY-MM-DD** - Status update
 -->
+
+**2026-02-04** - Testing ClickUp workflow sync integration
