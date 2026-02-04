@@ -11,7 +11,7 @@ sprint: 1
 start_date: "2026-01-18"
 due_date: "2026-01-20"
 time_estimate: "2d"
-clickup_task_id: null
+clickup_task_id: "86ewgdmc0"
 ---
 
 # Middleware Stack Implementation

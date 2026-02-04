@@ -11,7 +11,7 @@ sprint: 1
 start_date: "2026-01-21"
 due_date: "2026-01-24"
 time_estimate: "3d"
-clickup_task_id: null
+clickup_task_id: "86ewgdmc8"
 ---
 
 # JWT Authentication Service

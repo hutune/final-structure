@@ -11,7 +11,7 @@ sprint: 1
 start_date: "2026-01-15"
 due_date: "2026-01-17"
 time_estimate: "2d"
-clickup_task_id: null
+clickup_task_id: "86ewgdma9"
 ---
 
 # Project Setup & API Gateway Foundation
