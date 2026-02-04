@@ -30,7 +30,7 @@ jobs:
       - name: Get Changed Files and Author
         id: changed
         run: |
-          CHANGED=$(git diff --name-only HEAD^ HEAD 2>/dev/null | grep -E '_bmad-output/(epics|stories)/.*\.md$' | tr '\n' ' ' || echo "")
+          CHANGED=$(git diff --name-only HEAD^ HEAD 2>/dev/null | grep -E '_bmad-output/planning-artifacts/(epics|stories)/.*\.md$' | tr '\n' ' ' || echo "")
           AUTHOR_EMAIL=$(git log -1 --pretty=format:'%ae')
           echo "files=$CHANGED" >> $GITHUB_OUTPUT
           echo "author_email=$AUTHOR_EMAIL" >> $GITHUB_OUTPUT
