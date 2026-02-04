@@ -159,7 +159,14 @@ jobs:
               esac
             elif [[ "$filename" == story-*.md ]]; then
               TYPE="story"; LIST="$STORIES_LIST"
-              case "$STATUS" in to-do) CU_ST="Open";; scoping) CU_ST="scoping";; in-design) CU_ST="in design";; ready-for-dev|in-progress) CU_ST="ready for dev";; cancelled) CU_ST="cancelled";; *) CU_ST="Open";; esac
+              case "$STATUS" in 
+                to-do) CU_ST="TO DO";; 
+                in-design) CU_ST="IN DESIGN";; 
+                ready-for-dev|in-progress) CU_ST="READY FOR DEV";; 
+                in-test) CU_ST="READY FOR TEST";;
+                done) CU_ST="COMPLETE";;
+                *) CU_ST="TO DO";; 
+              esac
             else
               echo "  Skipping unknown file type: $file"
               continue
