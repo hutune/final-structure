@@ -252,11 +252,33 @@ jobs:
             
             # Update logic (handles both explicit updates and recovered duplicates)
             if [ -n "$CU_ID" ]; then
-              echo "  Updating $CU_ID..."
-              UP=$(echo "$PAYLOAD" | jq 'del(.links_to, .links)')  # Remove link fields from update
-              curl -sf -X PUT "https://api.clickup.com/api/v2/task/$CU_ID" \
-                -H "Authorization: $CLICKUP_API_KEY" -H "Content-Type: application/json" \
-                -d "$UP" > /dev/null 2>&1 && echo "  Updated" || echo "  Update failed"
+              # Verify task exists before updating
+              echo "  Verifying task $CU_ID exists..."
+              VERIFY=$(curl -sf "https://api.clickup.com/api/v2/task/$CU_ID" \
+                -H "Authorization: $CLICKUP_API_KEY" 2>&1)
+              
+              if [ -z "$VERIFY" ] || echo "$VERIFY" | grep -q "Task not found"; then
+                echo "  Task $CU_ID not found (may have been deleted), creating new task..."
+                # Reset clickup_task_id and create new
+                sed -i "s/^clickup_task_id:.*/clickup_task_id: null/" "$file"
+                RES=$(curl -s -X POST "https://api.clickup.com/api/v2/list/$LIST/task" \
+                  -H "Authorization: $CLICKUP_API_KEY" -H "Content-Type: application/json" \
+                  -d "$PAYLOAD" 2>&1) || { echo "  Error: $RES"; continue; }
+                
+                NEW_ID=$(echo "$RES" | jq -r '.id // empty')
+                if [ -n "$NEW_ID" ]; then
+                  echo "  Created: $NEW_ID"
+                  sed -i "s/^clickup_task_id:.*/clickup_task_id: \"$NEW_ID\"/" "$file"
+                else
+                  echo "  Failed: $RES"
+                fi
+              else
+                echo "  Updating $CU_ID..."
+                UP=$(echo "$PAYLOAD" | jq 'del(.links_to, .links)')  # Remove link fields from update
+                curl -sf -X PUT "https://api.clickup.com/api/v2/task/$CU_ID" \
+                  -H "Authorization: $CLICKUP_API_KEY" -H "Content-Type: application/json" \
+                  -d "$UP" > /dev/null 2>&1 && echo "  Updated" || echo "  Update failed"
+              fi
             fi
           done
           echo "Sync complete"
