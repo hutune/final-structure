@@ -65,3 +65,8 @@ func EndOfVietnameseDay() time.Time {
 	t := time.Now().In(loc)
 	return time.Date(t.Year(), t.Month(), t.Day(), 23, 59, 59, 99, loc)
 }
+
+// IsSameDay returns true if fromTime and toTime are on the same calendar day.
+func IsSameDay(fromTime, toTime time.Time) bool {
+	return fromTime.Year() == toTime.Year() && fromTime.YearDay() == toTime.YearDay()
+}

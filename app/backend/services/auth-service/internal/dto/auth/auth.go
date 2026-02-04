@@ -14,17 +14,26 @@ type LoginEmailReq struct {
 
 type RegisterEmailReq struct {
 	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
+	Password string `json:"password" binding:"required,min=8"` // Minimum 8 chars for security
 }
 
+// PasswordValidation provides password strength requirements
+// - Minimum 8 characters
+// - At least one uppercase letter
+// - At least one lowercase letter
+// - At least one digit
+// Note: Add custom validator in handler for full validation
+
 type LoginResp struct {
-	AccessToken  string    `json:"access_token"`
-	RefreshToken string    `json:"refresh_token"`
-	TokenType    string    `json:"token_type"`
-	ExpiresIn    int64     `json:"expires_in"`
-	UserID       uuid.UUID `json:"user_id"`
-	Email        string    `json:"email"`
-	IsSuperAdmin bool      `json:"is_super_admin"`
+	AccessToken     string    `json:"access_token,omitempty"`
+	RefreshToken    string    `json:"refresh_token,omitempty"`
+	TokenType       string    `json:"token_type,omitempty"`
+	ExpiresIn       int64     `json:"expires_in,omitempty"`
+	UserID          uuid.UUID `json:"user_id"`
+	Email           string    `json:"email"`
+	IsSuperAdmin    bool      `json:"is_super_admin"`
+	EmailVerified   bool      `json:"email_verified"`
+	VerificationMsg string    `json:"verification_msg,omitempty"`
 }
 
 // Token Management DTOs

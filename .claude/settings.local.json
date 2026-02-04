@@ -8,7 +8,9 @@
       "Bash(ls:*)",
       "Bash(go get:*)",
       "Bash(go test:*)",
-      "Bash(make test:*)"
+      "Bash(make test:*)",
+      "Bash(go mod tidy:*)",
+      "Bash(go build:*)"
     ]
   }
 }

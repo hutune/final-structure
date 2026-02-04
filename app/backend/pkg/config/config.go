@@ -17,7 +17,7 @@ import (
 // Sensitive data should be passed via environment variables.
 // Environment variables override YAML values using the format: SECTION_KEY
 // Example: HTTP_SERVER_PORT=8080 overrides http_server.port in YAML
-func LoadConfig(configDir string, cfg interface{}) error {
+func LoadConfig(configDir string, cfg any) error {
 	env := os.Getenv("APP_ENV")
 	if env == "" {
 		env = "development"
@@ -48,7 +48,7 @@ func LoadConfig(configDir string, cfg interface{}) error {
 }
 
 // loadYAMLFile loads a YAML file into the config struct
-func loadYAMLFile(path string, cfg interface{}) error {
+func loadYAMLFile(path string, cfg any) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func loadYAMLFile(path string, cfg interface{}) error {
 // applyEnvOverrides applies environment variable overrides to config struct.
 // Format: SECTION_KEY (uppercase, underscore-separated)
 // Example: HTTP_SERVER_PORT → http_server.port
-func applyEnvOverrides(cfg interface{}) {
+func applyEnvOverrides(cfg any) {
 	applyEnvOverridesRecursive(reflect.ValueOf(cfg), "")
 }
 
@@ -148,7 +148,7 @@ func setFieldFromEnv(field reflect.Value, envVal string) {
 }
 
 // MustLoadConfig loads config and panics on error
-func MustLoadConfig(configDir string, cfg interface{}) {
+func MustLoadConfig(configDir string, cfg any) {
 	if err := LoadConfig(configDir, cfg); err != nil {
 		panic(fmt.Sprintf("failed to load config: %v", err))
 	}

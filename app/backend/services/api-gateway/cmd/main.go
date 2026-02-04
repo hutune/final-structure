@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
 
+	pkgconfig "rmn-backend/pkg/config"
 	"rmn-backend/pkg/logger"
 	"rmn-backend/services/api-gateway/internal/handlers"
 	"rmn-backend/services/api-gateway/internal/middleware"
@@ -15,17 +15,11 @@ import (
 	rds "rmn-backend/services/api-gateway/pkg/redis"
 )
 
-var (
-	confPath = flag.String("config", "./config/app.development.yaml", "config file path")
-)
-
 func main() {
-
-	flag.Parse()
 	ctx := context.Background()
-	// Load configuration
-	cfg, err := config.LoadConfig(*confPath)
-	if err != nil {
+	cfg := &config.Config{}
+	configDir := pkgconfig.GetConfigPath()
+	if err := pkgconfig.LoadConfig(configDir, cfg); err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
@@ -55,7 +49,7 @@ func main() {
 			time.Second,
 		)
 		if err != nil {
-			zeroLogger.Error(ctx, "Failed to connect to Redis, using local limiter", err)
+			zeroLogger.Error(ctx, "Failed to connect to Redis, using local limiter", "error", err)
 		} else {
 			rateLimiter = redisLimiter
 		}

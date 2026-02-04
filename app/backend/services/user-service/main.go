@@ -1,26 +1,22 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
+	pkgconfig "rmn-backend/pkg/config"
+	"rmn-backend/pkg/logger"
 	"rmn-backend/services/user-service/internal/app"
 	"rmn-backend/services/user-service/internal/common"
 	"rmn-backend/services/user-service/internal/migrations"
 	"rmn-backend/services/user-service/pkg/config"
 	"rmn-backend/services/user-service/pkg/database"
 	"rmn-backend/services/user-service/pkg/redis"
-
-	"rmn-backend/pkg/logger"
-)
-
-var (
-	confPath = flag.String("config", "./config/app.development.yaml", "config file path")
 )
 
 func main() {
-	conf, err := config.LoadConfig(*confPath)
-	if err != nil {
+	conf := &config.Config{}
+	configDir := pkgconfig.GetConfigPath()
+	if err := pkgconfig.LoadConfig(configDir, conf); err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 

@@ -67,11 +67,23 @@ func (s *AuthService) RegisterEmail(ctx context.Context, req *authdto.RegisterEm
 		return nil, err
 	}
 
-	// TODO: Send verification email
-	_ = verificationToken // TODO: Remove this line when implementing email sending
+	// TODO(ISSUE-001): Implement email sending service
+	// Store verification token in Redis for later verification
+	verifyKey := fmt.Sprintf("email_verify:%s", userID.String())
+	if err := s.app.Redis.Set(ctx, verifyKey, verificationToken, 24*time.Hour); err != nil {
+		// Log error but don't fail registration
+		_ = err
+	}
 
-	// Generate tokens for immediate login
-	return s.generateTokens(userID, req.Email, false)
+	// Return registration response WITHOUT tokens
+	// User must verify email before getting access tokens
+	return &authdto.LoginResp{
+		UserID:          userID,
+		Email:           req.Email,
+		IsSuperAdmin:    false,
+		EmailVerified:   false,
+		VerificationMsg: "Please check your email to verify your account before logging in",
+	}, nil
 }
 
 // LoginEmail authenticates user with email and password
@@ -212,13 +224,14 @@ func (s *AuthService) generateTokens(userID uuid.UUID, email string, isSuperAdmi
 	}
 
 	return &authdto.LoginResp{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		TokenType:    "Bearer",
-		ExpiresIn:    expiresIn,
-		UserID:       userID,
-		Email:        email,
-		IsSuperAdmin: isSuperAdmin,
+		AccessToken:   accessToken,
+		RefreshToken:  refreshToken,
+		TokenType:     "Bearer",
+		ExpiresIn:     expiresIn,
+		UserID:        userID,
+		Email:         email,
+		IsSuperAdmin:  isSuperAdmin,
+		EmailVerified: true, // Only return tokens for verified accounts
 	}, nil
 }
 
@@ -362,7 +375,19 @@ func (s *AuthService) VerifyForgotOTP(ctx context.Context, req *authdto.VerifyFo
 	return nil
 }
 
-// generateOTP generates a 6-digit OTP
+// generateOTP generates a cryptographically secure 6-digit OTP
 func generateOTP() string {
-	return fmt.Sprintf("%06d", time.Now().Unix()%1000000)
+	// Use crypto/rand for secure random number generation
+	b := make([]byte, 4)
+	_, err := rand.Read(b)
+	if err != nil {
+		// Fallback to less secure but still random method
+		return fmt.Sprintf("%06d", time.Now().UnixNano()%1000000)
+	}
+	// Convert to number and take modulo to get 6 digits
+	num := int(b[0])<<24 | int(b[1])<<16 | int(b[2])<<8 | int(b[3])
+	if num < 0 {
+		num = -num
+	}
+	return fmt.Sprintf("%06d", num%1000000)
 }

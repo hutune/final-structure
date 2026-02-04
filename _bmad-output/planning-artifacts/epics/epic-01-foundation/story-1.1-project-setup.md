@@ -70,14 +70,14 @@ server:
 
 ## Checklist (Subtasks)
 
-- [ ] Initialize Go module với `go mod init`
-- [ ] Tạo folder structure
-- [ ] Implement config loading với Viper
-- [ ] Implement basic HTTP server
-- [ ] Implement `/health` endpoint
-- [ ] Implement graceful shutdown
-- [ ] Viết unit tests cho config loading
-- [ ] Tạo Dockerfile (optional)
+- [x] Initialize Go module với `go mod init`
+- [x] Tạo folder structure
+- [x] Implement config loading với YAML (updated from Viper)
+- [x] Implement basic HTTP server
+- [x] Implement `/health` endpoint
+- [x] Implement graceful shutdown
+- [x] Viết unit tests cho config loading
+- [x] Tạo Dockerfile
 
 ## Updates
 
