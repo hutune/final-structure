@@ -11,7 +11,7 @@ sprint: null
 start_date: null
 due_date: null
 time_estimate: "1d"
-clickup_task_id: "86ewgcpna"
+clickup_task_id: null
 ---
 
 # Content Approval Workflow

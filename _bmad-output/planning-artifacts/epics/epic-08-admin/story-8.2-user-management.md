@@ -11,7 +11,7 @@ sprint: null
 start_date: null
 due_date: null
 time_estimate: "1d"
-clickup_task_id: "86ewgcpm4"
+clickup_task_id: null
 ---
 
 # User & Account Management APIs

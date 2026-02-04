@@ -11,7 +11,7 @@ sprint: null
 start_date: null
 due_date: null
 time_estimate: "2d"
-clickup_task_id: "86ewgcpj3"
+clickup_task_id: null
 ---
 
 # Advertiser Wallet Management

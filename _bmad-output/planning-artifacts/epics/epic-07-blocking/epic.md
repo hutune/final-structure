@@ -7,7 +7,7 @@ assigned_to: null
 tags: ["epic", "backend", "blocking", "competitor"]
 start_date: null
 due_date: null
-clickup_task_id: "86ewgcpk7"
+clickup_task_id: null
 ---
 
 # Competitor Blocking Engine

@@ -11,7 +11,7 @@ sprint: null
 start_date: null
 due_date: null
 time_estimate: "2d"
-clickup_task_id: "86ewgcpwp"
+clickup_task_id: null
 ---
 
 # Store Registration & Management

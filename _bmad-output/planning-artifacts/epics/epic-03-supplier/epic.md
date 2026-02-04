@@ -7,7 +7,7 @@ assigned_to: null
 tags: ["epic", "backend", "supplier", "store", "device"]
 start_date: null
 due_date: null
-clickup_task_id: "86ewgcpvw"
+clickup_task_id: null
 ---
 
 # Supplier & Store Management
