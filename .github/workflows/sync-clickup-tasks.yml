@@ -212,16 +212,7 @@ jobs:
             TIME_MS=$(hours_to_ms "$TIME_EST")
             [ -n "$TIME_MS" ] && PAYLOAD=$(echo "$PAYLOAD" | jq --argjson t "$TIME_MS" '. + {time_estimate:$t}')
             
-            # Link to epic with relationship type
-            if [ "$TYPE" = "story" ] && [ -n "$EPIC" ]; then
-              EPIC_CU=$(get_epic_cu "$EPIC")
-              if [ -n "$EPIC_CU" ]; then
-                RT="${LINK_TYPE:-waiting_on}"  # Default: story waits on epic
-                PAYLOAD=$(echo "$PAYLOAD" | jq --arg l "$EPIC_CU" --arg t "$RT" \
-                  '. + {links:[{task_id:$l, type:$t}]}')
-                echo "  Linking to $EPIC → $EPIC_CU ($RT)"
-              fi
-            fi
+            # Linking will be done after task creation via separate API call
             
             if [ -z "$CU_ID" ]; then
               # Check for existing task by ID in description (sync_all duplicate prevention)
@@ -279,6 +270,17 @@ jobs:
                   -H "Authorization: $CLICKUP_API_KEY" -H "Content-Type: application/json" \
                   -d "$UP" > /dev/null 2>&1 && echo "  Updated" || echo "  Update failed"
               fi
+            
+            # Link story to epic using ClickUp link API (must be after task exists)
+            if [ "$TYPE" = "story" ] && [ -n "$EPIC" ] && [ -n "$CU_ID" ]; then
+              EPIC_CU=$(get_epic_cu "$EPIC")
+              if [ -n "$EPIC_CU" ]; then
+                echo "  Creating link: $CU_ID → $EPIC_CU"
+                curl -sf -X POST "https://api.clickup.com/api/v2/task/$CU_ID/link/$EPIC_CU" \
+                  -H "Authorization: $CLICKUP_API_KEY" > /dev/null 2>&1 && \
+                  echo "  Linked to $EPIC" || echo "  Link failed"
+              fi
+            fi
             fi
           done
           echo "Sync complete"
