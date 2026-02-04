@@ -71,3 +71,5 @@ Format: **YYYY-MM-DD** - Status update
 **2026-02-04** - Testing ClickUp workflow sync integration
 
 **2026-02-04 14:45** - Testing workflows after grep pattern fix
+
+**2026-02-04 14:47** - Testing after API mapping fixes (status=COMPLETE, priority=urgent)
