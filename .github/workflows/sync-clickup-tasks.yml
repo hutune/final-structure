@@ -61,10 +61,9 @@ jobs:
               echo $(( $1 * 3600000 ))
             fi
           }
-          
-          priority_map() {
-            case "$1" in urgent) echo 1;; high) echo 2;; normal) echo 3;; low) echo 4;; *) echo "";; esac
-          }
+                    priority_map() {
+              case "$1" in critical|urgent) echo 1;; high) echo 2;; normal) echo 3;; low) echo 4;; *) echo "";; esac
+            }
           
           # Build epic mapping: epic_id:clickup_id,...
           EPIC_MAP=""
@@ -122,7 +121,7 @@ jobs:
             # Type and status mapping
             if [[ "$file" == *"/epics/"* ]]; then
               TYPE="epic"; LIST="$EPICS_LIST"
-              case "$STATUS" in to-do) CU_ST="to do";; in-progress) CU_ST="in progress";; done) CU_ST="complete";; cancelled) CU_ST="cancelled";; *) CU_ST="to do";; esac
+              case "$STATUS" in to-do) CU_ST="to do";; in-progress) CU_ST="in progress";; done) CU_ST="COMPLETE";; cancelled) CU_ST="cancelled";; *) CU_ST="to do";; esac
             else
               TYPE="story"; LIST="$STORIES_LIST"
               case "$STATUS" in to-do) CU_ST="Open";; scoping) CU_ST="scoping";; in-design) CU_ST="in design";; ready-for-dev|in-progress) CU_ST="ready for dev";; cancelled) CU_ST="cancelled";; *) CU_ST="Open";; esac
