@@ -146,8 +146,8 @@ jobs:
               [ -n "$uid" ] && ASSIGNEES="[$uid]"
             fi
             
-            # Type and status mapping
-            if [[ "$file" == *"/epics/"* ]]; then
+            # Type and status mapping - check FILENAME not path
+            if [[ "$(basename "$file")" == "epic.md" ]]; then
               TYPE="epic"; LIST="$EPICS_LIST"
               case "$STATUS" in 
                 to-do) CU_ST="BACKLOG";; 
@@ -156,9 +156,12 @@ jobs:
                 cancelled) CU_ST="CANCELLED";; 
                 *) CU_ST="BACKLOG";; 
               esac
-            else
+            elif [[ "$(basename "$file")" == story-*.md ]]; then
               TYPE="story"; LIST="$STORIES_LIST"
               case "$STATUS" in to-do) CU_ST="Open";; scoping) CU_ST="scoping";; in-design) CU_ST="in design";; ready-for-dev|in-progress) CU_ST="ready for dev";; cancelled) CU_ST="cancelled";; *) CU_ST="Open";; esac
+            else
+              echo "  Skipping unknown file type: $file"
+              continue
             fi
             
             # Description
