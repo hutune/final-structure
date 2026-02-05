@@ -1,7 +1,7 @@
 ---
 id: "STORY-3.4"
 epic_id: "EPIC-003"
-title: "Supplier Revenue Dashboard APIs"
+title: "Supplier Revenue Dashboard"
 status: "to-do"
 priority: "normal"
 assigned_to: null
@@ -14,112 +14,130 @@ time_estimate: "2d"
 clickup_task_id: "86ewgdmdu"
 ---
 
-# Supplier Revenue Dashboard APIs
+# Supplier Revenue Dashboard
 
 ## User Story
 
 **As a** Supplier,
-**I want** xem doanh thu và yêu cầu rút tiền,
-**So that** tôi có thể theo dõi thu nhập từ quảng cáo.
+**I want** to see my earnings and withdraw my revenue,
+**So that** I can manage my advertising income and plan my business.
+
+## Business Context
+
+Suppliers earn 80% of impression revenue. The dashboard is their primary tool for:
+- Tracking daily/monthly earnings
+- Understanding which stores/devices perform best
+- Managing withdrawals
+- Tax reporting and accounting
+
+## Business Rules
+
+> Reference: [09-business-rules-supplier.md](file:///Users/mazhnguyen/Desktop/final-structure/docs/_rmn-arms-docs/business-rules%20(en%20ver)/09-business-rules-supplier.md)
+
+### Revenue Split
+```
+Impression Revenue = 100%
+├── Supplier: 80%
+└── Platform: 20%
+```
+
+### Balance Types
+| Type | Description |
+|------|-------------|
+| **Held** | Revenue in 7-day hold period |
+| **Available** | Released, ready for withdrawal |
+| **Processing** | Withdrawal in progress |
+
+### Withdrawal Rules
+| Criteria | Requirement |
+|----------|-------------|
+| Minimum | $50 |
+| Maximum | Available balance |
+| Processing | 3-5 business days |
+| Fees | $5 (< $500), $10 ($500-$5k), $25 (> $5k) |
+
+### Payment Schedule Options
+- **Weekly:** Every Monday
+- **Biweekly:** Every other Monday
+- **Monthly:** 1st of each month
 
 ## Acceptance Criteria
 
-- [ ] GET `/api/v1/supplier/revenue` trả về revenue summary
-- [ ] Revenue breakdown theo store và device
-- [ ] POST `/api/v1/supplier/withdrawals` tạo withdrawal request
-- [ ] GET `/api/v1/supplier/withdrawals` trả về withdrawal history
-- [ ] Withdrawal có status: pending, processing, completed, rejected
+### Revenue Dashboard
+- [ ] Total earnings this month prominently displayed
+- [ ] Available vs Held balance breakdown
+- [ ] Revenue chart (daily/weekly/monthly)
+- [ ] Best performing stores and devices
+- [ ] Upcoming settlement schedule
+
+### Revenue Breakdown
+- [ ] Revenue by store with impressions count
+- [ ] Revenue by device
+- [ ] Revenue by campaign category
+- [ ] Historical comparison (vs last month)
+
+### Withdrawals
+- [ ] Initiate withdrawal with amount
+- [ ] See fee before confirming
+- [ ] View withdrawal history with status
+- [ ] Cancel pending withdrawal
+- [ ] Email notification on status change
+
+### Reporting
+- [ ] Export to CSV for accounting
+- [ ] Monthly statement PDF
+- [ ] Tax summary (annual)
 
 ## Technical Notes
 
+<details>
+<summary>Implementation Details (For Dev)</summary>
+
 **API Endpoints:**
 ```
-GET  /api/v1/supplier/revenue?period=month
-GET  /api/v1/supplier/revenue/history?from={date}&to={date}
+# Revenue
+GET /api/v1/supplier/revenue/summary
+GET /api/v1/supplier/revenue/breakdown?by=store|device
+GET /api/v1/supplier/revenue/history?from=...&to=...
+
+# Withdrawals
 POST /api/v1/supplier/withdrawals
 GET  /api/v1/supplier/withdrawals
 GET  /api/v1/supplier/withdrawals/{id}
+POST /api/v1/supplier/withdrawals/{id}/cancel
+
+# Reports
+GET /api/v1/supplier/reports/statement?month=2026-02
+GET /api/v1/supplier/reports/export?format=csv
 ```
 
-**Database Tables:**
-```sql
-CREATE TABLE supplier_wallets (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    supplier_id UUID UNIQUE NOT NULL REFERENCES users(id),
-    balance DECIMAL(12,2) DEFAULT 0,
-    pending_balance DECIMAL(12,2) DEFAULT 0,
-    total_earned DECIMAL(12,2) DEFAULT 0,
-    currency VARCHAR(3) DEFAULT 'USD',
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE withdrawal_requests (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    supplier_id UUID NOT NULL REFERENCES users(id),
-    amount DECIMAL(12,2) NOT NULL,
-    status VARCHAR(50) DEFAULT 'pending',
-    bank_name VARCHAR(255),
-    account_number VARCHAR(100),
-    account_holder VARCHAR(255),
-    notes TEXT,
-    processed_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX idx_withdrawals_supplier ON withdrawal_requests(supplier_id);
-CREATE INDEX idx_withdrawals_status ON withdrawal_requests(status);
-```
-
-**Revenue Summary Response:**
-```json
-{
-    "period": "2026-02",
-    "total_revenue": 3200.00,
-    "total_impressions": 640000,
-    "by_store": [
-        {
-            "store_id": "uuid",
-            "store_name": "Store A",
-            "revenue": 1800.00,
-            "impressions": 360000
-        }
-    ],
-    "by_device": [
-        {
-            "device_id": "uuid",
-            "device_name": "Screen 1",
-            "revenue": 500.00
-        }
-    ],
-    "wallet": {
-        "balance": 2500.00,
-        "pending": 700.00
+**Fee Calculation:**
+```go
+func calculateWithdrawalFee(amount decimal.Decimal) decimal.Decimal {
+    if amount.LessThan(decimal.NewFromInt(500)) {
+        return decimal.NewFromInt(5)
     }
+    if amount.LessThan(decimal.NewFromInt(5000)) {
+        return decimal.NewFromInt(10)
+    }
+    return decimal.NewFromInt(25)
 }
 ```
 
-**Withdrawal Request:**
-```json
-{
-    "amount": 1000.00,
-    "bank_name": "Vietcombank",
-    "account_number": "1234567890",
-    "account_holder": "Nguyen Van A"
-}
-```
+</details>
 
 ## Checklist (Subtasks)
 
-- [ ] Tạo supplier_wallets table migration
-- [ ] Tạo withdrawal_requests table migration
-- [ ] Implement Get Revenue Summary
-- [ ] Implement Revenue History
-- [ ] Implement Create Withdrawal Request
-- [ ] Implement List Withdrawals
-- [ ] Validate withdrawal amount <= balance
-- [ ] Admin endpoints cho withdrawal processing
-- [ ] Unit tests
+- [ ] Implement revenue summary endpoint
+- [ ] Implement revenue breakdown (by store, device)
+- [ ] Implement revenue history with date range
+- [ ] Implement withdrawal request with fee calculation
+- [ ] Implement withdrawal history
+- [ ] Implement withdrawal cancellation
+- [ ] Generate monthly statement PDF
+- [ ] CSV export functionality
+- [ ] Email notifications on withdrawal status
+- [ ] Unit tests for fee calculation
 - [ ] Integration tests
 
 ## Updates
@@ -128,3 +146,5 @@ CREATE INDEX idx_withdrawals_status ON withdrawal_requests(status);
 Dev comments will be added here by AI when updating via chat.
 Format: **YYYY-MM-DD HH:MM** - @author: Message
 -->
+
+**2026-02-05 09:12** - Rewrote with balance breakdown, withdrawal fees, and reporting features from business rules.

@@ -18,80 +18,102 @@ clickup_task_id: "86ewgdm9x"
 
 ## User Story
 
-**As an** Admin,
-**I want** xét duyệt nội dung quảng cáo,
-**So that** chỉ content phù hợp mới được phát.
+**As an** Advertiser,
+**I want** to know if my content is approved quickly,
+**So that** I can launch my campaign on time.
+
+## Business Context
+
+Content moderation protects brand safety for all parties:
+- Prevents inappropriate content on devices
+- Reduces legal risk for suppliers and platform
+- Builds advertiser trust through fast approval
+- Uses AI to automate most approvals
+
+## Business Rules
+
+> Reference: [10-business-rules-content.md](file:///Users/mazhnguyen/Desktop/final-structure/docs/_rmn-arms-docs/business-rules%20(en%20ver)/10-business-rules-content.md)
+
+### Two-Tier Moderation
+1. **AI Moderation (automatic):** All content scanned on upload
+2. **Manual Review:** Flagged content reviewed by human
+
+### AI Moderation Scoring
+| Score Range | Action | SLA |
+|-------------|--------|-----|
+| 90-100 | Auto-APPROVE | Instant |
+| 70-89 | FLAGGED → Manual review | 24h |
+| < 70 | Auto-REJECT | Instant |
+
+### Content Scan Categories
+- Adult/sexual content
+- Violence/gore
+- Hate symbols/speech
+- Copyright issues
+- Weapons, drugs, alcohol
+
+### Prohibited Content
+Automatic rejection:
+- Adult/sexual content
+- Violence or graphic imagery
+- Hate speech, discrimination
+- Illegal products or services
+
+### Appeal Process
+- 1 appeal allowed per asset
+- Senior reviewer decision is final
+- Appeal SLA: 48 hours
 
 ## Acceptance Criteria
 
-- [ ] GET `/api/v1/admin/content/pending` trả về content chờ duyệt
-- [ ] POST `/api/v1/admin/content/{id}/approve` approve content
-- [ ] POST `/api/v1/admin/content/{id}/reject` reject với reason
-- [ ] Notification được gửi khi approve/reject
-- [ ] Audit log cho approval actions
+### For Advertisers
+- [ ] See content status (pending/approved/rejected)
+- [ ] Receive notification when approved/rejected
+- [ ] View rejection reason with policy link
+- [ ] Appeal rejected content (once)
+- [ ] SLA: 90% approved within 24h
+
+### For Admins
+- [ ] View queue of flagged content
+- [ ] One-click approve/reject
+- [ ] Must provide reason for rejection
+- [ ] View AI moderation score and flags
+
+### For System
+- [ ] Auto-approve score ≥ 90
+- [ ] Auto-reject score < 70
+- [ ] Flag for review score 70-89
+- [ ] Audit log for all decisions
 
 ## Technical Notes
 
+<details>
+<summary>Implementation Details (For Dev)</summary>
+
 **API Endpoints:**
 ```
-GET  /api/v1/admin/content/pending?page=1&limit=20
-GET  /api/v1/admin/content/{id}
-POST /api/v1/admin/content/{id}/approve
-POST /api/v1/admin/content/{id}/reject
+GET  /api/v1/admin/content/pending      # Review queue
+POST /api/v1/admin/content/{id}/approve # Approve
+POST /api/v1/admin/content/{id}/reject  # Reject (reason required)
+POST /api/v1/content/{id}/appeal        # Advertiser appeal
 ```
 
-**Content Status Flow:**
-```
-pending_approval → approved → (can be archived)
-                → rejected → (can resubmit)
-```
+**AI Integration:**
+- AWS Rekognition or Google Cloud Vision
+- Return moderation_score (0-100)
+- Return moderation_flags array
 
-**Reject Request:**
-```json
-{
-    "reason": "Content violates advertising guidelines: inappropriate imagery"
-}
-```
-
-**Audit Log Table:**
-```sql
-CREATE TABLE content_audit_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    content_id UUID NOT NULL REFERENCES contents(id),
-    action VARCHAR(50) NOT NULL, -- approved, rejected
-    admin_id UUID NOT NULL REFERENCES users(id),
-    reason TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-**Notification on Approval:**
-```json
-{
-    "type": "content_approved",
-    "title": "Content Approved",
-    "body": "Your content 'summer-sale.mp4' has been approved and is ready for use."
-}
-```
-
-**Notification on Rejection:**
-```json
-{
-    "type": "content_rejected",
-    "title": "Content Rejected",
-    "body": "Your content 'summer-sale.mp4' was rejected. Reason: [reason]"
-}
-```
+</details>
 
 ## Checklist (Subtasks)
 
-- [ ] Implement List Pending Content endpoint
-- [ ] Implement Get Content Detail endpoint
-- [ ] Implement Approve endpoint
-- [ ] Implement Reject endpoint
+- [ ] Integrate AI moderation service
+- [ ] Implement auto-approve/reject logic
+- [ ] Create admin review queue
+- [ ] Implement approve/reject endpoints
 - [ ] Create audit log table
-- [ ] Log approval actions
-- [ ] Send notifications
+- [ ] Implement appeal workflow
+- [ ] Send notifications on status change
 - [ ] Unit tests
 - [ ] Integration tests
 
@@ -101,3 +123,5 @@ CREATE TABLE content_audit_logs (
 Dev comments will be added here by AI when updating via chat.
 Format: **YYYY-MM-DD HH:MM** - @author: Message
 -->
+
+**2026-02-05 09:20** - Rewrote with AI moderation scoring thresholds and appeal process from CMS business rules.

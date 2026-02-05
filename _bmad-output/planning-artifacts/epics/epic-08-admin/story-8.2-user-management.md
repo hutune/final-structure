@@ -1,7 +1,7 @@
 ---
 id: "STORY-8.2"
 epic_id: "EPIC-008"
-title: "User & Account Management APIs"
+title: "User & Account Management"
 status: "to-do"
 priority: "medium"
 assigned_to: null
@@ -14,101 +14,134 @@ time_estimate: "1d"
 clickup_task_id: "86ewgdm8f"
 ---
 
-# User & Account Management APIs
+# User & Account Management
 
 ## User Story
 
-**As an** Admin,
-**I want** quản lý users và accounts,
-**So that** tôi có thể approve, suspend, hoặc support users.
+**As a** Platform Admin,
+**I want** to manage user accounts across the platform,
+**So that** I can verify new users, handle support issues, and protect the platform.
+
+## Business Context
+
+User management ensures platform quality:
+- Verify legitimate businesses before activation
+- Handle account issues and suspensions
+- Support users with account problems
+- Maintain platform security
+
+## Business Rules
+
+### User Status Lifecycle
+```
+PENDING → VERIFIED → SUSPENDED → VERIFIED
+                   → BANNED (permanent)
+```
+
+### Verification Requirements
+| User Type | Required |
+|-----------|----------|
+| Advertiser | Business license, ID |
+| Supplier | Business license, store verification |
+| Admin | Internal approval only |
+
+### Suspension Effects
+- All active sessions invalidated
+- Advertiser: Campaigns paused
+- Supplier: Devices stop serving ads
+- Revenue on hold during suspension
+
+### Suspension Reasons
+- Terms of service violation
+- Fraudulent activity
+- Non-payment (advertisers)
+- Device tampering (suppliers)
+- Copyright violations
+- Pending investigation
 
 ## Acceptance Criteria
 
-- [ ] GET `/api/v1/admin/users` trả về user list với filters
-- [ ] POST `/api/v1/admin/users/{id}/verify` verify user
-- [ ] POST `/api/v1/admin/users/{id}/suspend` suspend user
-- [ ] Suspended user sessions được invalidate
+### For User List
+- [ ] View all users with filters (role, status)
+- [ ] Search by email, name, company
+- [ ] Sort by date, revenue, campaigns
+- [ ] Quick actions (verify, suspend)
+
+### For User Details
+- [ ] View full profile
+- [ ] View account activity history
+- [ ] View verification documents
+- [ ] View related entities (campaigns/stores)
+
+### For Account Actions
+- [ ] Verify user with notes
+- [ ] Suspend with reason (required)
+- [ ] Unsuspend with notes
+- [ ] Ban permanently (with manager approval)
+
+### For Security
+- [ ] All sessions invalidated on suspend
+- [ ] Audit log for all admin actions
+- [ ] Notifications sent on status change
 
 ## Technical Notes
 
+<details>
+<summary>Implementation Details (For Dev)</summary>
+
 **API Endpoints:**
 ```
-GET  /api/v1/admin/users?role=supplier&status=pending&page=1
+GET  /api/v1/admin/users?role=...&status=...
 GET  /api/v1/admin/users/{id}
 POST /api/v1/admin/users/{id}/verify
 POST /api/v1/admin/users/{id}/suspend
 POST /api/v1/admin/users/{id}/unsuspend
+POST /api/v1/admin/users/{id}/ban    # Requires manager
 ```
 
-**Users List Response:**
-```json
-{
-    "data": [
-        {
-            "id": "uuid",
-            "email": "user@example.com",
-            "role": "supplier",
-            "status": "pending",
-            "stores_count": 3,
-            "devices_count": 12,
-            "total_revenue": 5000.00,
-            "created_at": "2026-01-15"
-        }
-    ],
-    "pagination": {
-        "page": 1,
-        "limit": 20,
-        "total": 150
-    }
-}
-```
-
-**Suspend Request:**
-```json
-{
-    "reason": "Violation of terms of service",
-    "notify_user": true
-}
-```
-
-**User Status Flow:**
-```
-pending → verified → suspended → verified
-                   → banned (permanent)
-```
-
-**Session Invalidation:**
+**Suspend Effects:**
 ```go
-func (s *AdminService) SuspendUser(userID string, reason string) error {
-    user := s.userRepo.Get(userID)
+func (s *AdminService) SuspendUser(userID, reason string) error {
+    // 1. Update user status
     user.Status = "suspended"
     user.SuspendReason = reason
-    s.userRepo.Update(user)
-
-    // Invalidate all sessions
+    
+    // 2. Invalidate all sessions
     s.sessionRepo.InvalidateByUserID(userID)
-
-    // Send notification
-    s.notificationService.Send(userID, Notification{
-        Type: "account_suspended",
-        Title: "Account Suspended",
-        Body: fmt.Sprintf("Your account has been suspended. Reason: %s", reason),
-    })
-
+    
+    // 3. Pause advertiser campaigns
+    if user.Role == "advertiser" {
+        s.campaignService.PauseAllByAdvertiser(userID)
+    }
+    
+    // 4. Stop supplier devices
+    if user.Role == "supplier" {
+        s.deviceService.DeactivateBySupplier(userID)
+    }
+    
+    // 5. Notify user
+    s.notify(userID, "account_suspended", reason)
+    
+    // 6. Audit log
+    s.auditLog.Record("suspend_user", userID, reason)
+    
     return nil
 }
 ```
 
+</details>
+
 ## Checklist (Subtasks)
 
-- [ ] Implement List Users endpoint với filters
-- [ ] Implement Get User Detail endpoint
-- [ ] Implement Verify User endpoint
-- [ ] Implement Suspend User endpoint
-- [ ] Implement Unsuspend User endpoint
+- [ ] Implement user list with filters
+- [ ] Implement user detail view
+- [ ] Implement verify endpoint
+- [ ] Implement suspend endpoint
+- [ ] Implement unsuspend endpoint
 - [ ] Session invalidation on suspend
-- [ ] Send notifications
+- [ ] Cascade effects (campaigns, devices)
 - [ ] Audit logging
+- [ ] Email notifications
 - [ ] Unit tests
 
 ## Updates
@@ -117,3 +150,5 @@ func (s *AdminService) SuspendUser(userID string, reason string) error {
 Dev comments will be added here by AI when updating via chat.
 Format: **YYYY-MM-DD HH:MM** - @author: Message
 -->
+
+**2026-02-05 09:26** - Rewrote with user lifecycle, verification requirements, and suspension effects.

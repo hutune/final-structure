@@ -1,9 +1,0 @@
-replicaCount: 1
-image:
-  repository: ghcr.io/rmn-platform/auth-service
-  tag: latest
-  pullPolicy: IfNotPresent
-service:
-  port: 8081
-resources: {}
-env: development

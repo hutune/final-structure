@@ -19,81 +19,98 @@ clickup_task_id: "86ewgdm9g"
 ## User Story
 
 **As an** Advertiser,
-**I want** upload hình ảnh và video quảng cáo,
-**So that** tôi có content để chạy campaigns.
+**I want** to easily upload my advertising content (images and videos),
+**So that** I can use them in my campaigns.
+
+## Business Context
+
+Content is the heart of any ad campaign. A smooth upload experience:
+- Reduces time-to-launch for campaigns
+- Ensures content meets technical requirements for devices
+- Automatically processes content for optimal playback
+- Enables content reuse across multiple campaigns
+
+## Business Rules
+
+> Reference: [10-business-rules-content.md](file:///Users/mazhnguyen/Desktop/final-structure/docs/_rmn-arms-docs/business-rules%20(en%20ver)/10-business-rules-content.md)
+
+### Supported Formats
+| Type | Formats | Max Size | Resolution |
+|------|---------|----------|------------|
+| Image | JPG, PNG, GIF, WebP | 10 MB | Min 1920x1080 |
+| Video | MP4 (H.264) | 500 MB | Min 1920x1080 |
+| Audio | MP3, AAC | 50 MB | - |
+
+### File Validation
+- Valid file format (not corrupted)
+- File size within limits
+- Resolution meets minimum
+- File name sanitized (no special chars)
+
+### Deduplication
+- SHA-256 hash calculated on upload
+- Duplicate detected → reuse existing file
+- Storage optimized, saves cost
+
+### Content Processing
+| Type | Processing Steps |
+|------|-----------------|
+| Image | Validate, extract dimensions, generate thumbnail |
+| Video | Validate codec, extract metadata, generate thumbnail, transcode |
+| Audio | Validate format, extract duration, generate waveform |
 
 ## Acceptance Criteria
 
-- [ ] POST `/api/v1/content/upload` upload file lên S3
-- [ ] Supported formats: JPG, PNG, MP4
-- [ ] Max size: 500MB
-- [ ] Minimum resolution: 1920x1080
-- [ ] CDN URL được generate sau upload
-- [ ] Content record được tạo với status "pending_approval"
+### For Advertisers
+- [ ] Drag-and-drop upload in web interface
+- [ ] Progress indicator during upload
+- [ ] Clear error messages if upload fails
+- [ ] Preview thumbnail after upload
+- [ ] Auto-generated filename (editable)
+
+### For File Processing
+- [ ] Validate file format and size on upload
+- [ ] Extract metadata (duration, resolution)
+- [ ] Generate thumbnail for preview
+- [ ] Store in S3 with unique key
+- [ ] Generate CDN URL for fast delivery
+
+### For Content Management
+- [ ] View all uploaded content in library
+- [ ] Search and filter by type, date, status
+- [ ] Delete unused content
 
 ## Technical Notes
 
-**API Endpoint:**
-```
-POST /api/v1/content/upload (multipart/form-data)
-```
+<details>
+<summary>Implementation Details (For Dev)</summary>
 
-**Database Table:**
-```sql
-CREATE TABLE contents (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    advertiser_id UUID NOT NULL REFERENCES users(id),
-    filename VARCHAR(255) NOT NULL,
-    original_filename VARCHAR(255),
-    content_type VARCHAR(50), -- image, video
-    mime_type VARCHAR(100),
-    size_bytes BIGINT,
-    width INT,
-    height INT,
-    duration_seconds INT, -- for videos
-    s3_key VARCHAR(500) NOT NULL,
-    cdn_url VARCHAR(500),
-    thumbnail_url VARCHAR(500),
-    status VARCHAR(50) DEFAULT 'pending_approval',
-    rejection_reason TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
+**Upload Flow:**
+1. Pre-signed URL from server
+2. Direct upload to S3
+3. Server-side processing (async)
+4. Webhook on complete
 
-CREATE INDEX idx_contents_advertiser ON contents(advertiser_id);
-CREATE INDEX idx_contents_status ON contents(status);
+**API Endpoints:**
+```
+POST /api/v1/content/presign      # Get presigned URL
+POST /api/v1/content/complete     # Mark upload complete
+GET  /api/v1/content              # List content
+GET  /api/v1/content/{id}         # Get content details
+DELETE /api/v1/content/{id}       # Delete content
 ```
 
-**Upload Response:**
-```json
-{
-    "id": "uuid",
-    "filename": "summer-sale.mp4",
-    "content_type": "video",
-    "size_bytes": 52428800,
-    "duration_seconds": 15,
-    "cdn_url": "https://cdn.example.com/content/abc123.mp4",
-    "thumbnail_url": "https://cdn.example.com/thumbnails/abc123.jpg",
-    "status": "pending_approval"
-}
-```
-
-**Validation Rules:**
-- File size <= 500MB
-- Image: JPG, PNG, minimum 1920x1080
-- Video: MP4, minimum 1920x1080, max duration 60s
+</details>
 
 ## Checklist (Subtasks)
 
-- [ ] Setup S3/MinIO connection
-- [ ] Implement multipart upload endpoint
-- [ ] Validate file type và size
+- [ ] Implement presigned URL generation
+- [ ] Implement upload completion webhook
+- [ ] Validate file format and size
 - [ ] Extract metadata (resolution, duration)
-- [ ] Generate unique S3 key
-- [ ] Upload to S3
-- [ ] Generate CDN URL
-- [ ] Generate thumbnail for videos
-- [ ] Create content record
+- [ ] Generate thumbnails (images + video frames)
+- [ ] Implement deduplication (SHA-256)
+- [ ] Generate CDN URLs
 - [ ] Unit tests
 - [ ] Integration tests
 
@@ -103,3 +120,5 @@ CREATE INDEX idx_contents_status ON contents(status);
 Dev comments will be added here by AI when updating via chat.
 Format: **YYYY-MM-DD HH:MM** - @author: Message
 -->
+
+**2026-02-05 09:20** - Rewrote with file validation, deduplication, and processing steps from CMS business rules.

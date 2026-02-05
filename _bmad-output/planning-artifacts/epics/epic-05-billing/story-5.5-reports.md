@@ -18,94 +18,91 @@ clickup_task_id: "86ewgdm6m"
 
 ## User Story
 
-**As an** Advertiser/Supplier,
-**I want** xem lịch sử billing và reports,
-**So that** tôi có thể theo dõi chi tiêu/thu nhập.
+**As an** Advertiser,
+**I want** to view detailed reports on my advertising spend,
+**So that** I can analyze campaign ROI and optimize future budgets.
+
+**As a** Supplier,
+**I want** to view my revenue history and earnings breakdown,
+**So that** I can track income and plan for withdrawals.
+
+## Business Context
+
+Transparent billing builds trust:
+- **Advertisers** need spend visibility for budget planning and accounting
+- **Suppliers** need revenue tracking for business decisions
+- Both need export capabilities for tax/accounting purposes
 
 ## Acceptance Criteria
 
-- [ ] GET `/api/v1/billing/history` trả về billing transactions
-- [ ] GET `/api/v1/billing/report` trả về aggregated report
-- [ ] Filter theo campaign, date range
-- [ ] Pagination support
-- [ ] Export CSV/PDF (Phase 2)
+### For Advertisers
+- [ ] View **billing history** with date range filter
+- [ ] See breakdown by: campaign, store, day
+- [ ] View rejected impressions with reasons
+- [ ] Download monthly **invoice PDF**
+- [ ] Export transaction history to **CSV**
+
+### For Suppliers
+- [ ] View **revenue history** with date range filter
+- [ ] See breakdown by: store, campaign category, day
+- [ ] View held vs settled revenue
+- [ ] See upcoming settlement schedule
+- [ ] Export earnings report for tax purposes
+
+### Report Data
+| Report Type | Advertiser | Supplier |
+|-------------|------------|----------|
+| Daily summary | ✓ | ✓ |
+| Campaign breakdown | ✓ | - |
+| Store breakdown | ✓ | ✓ |
+| Rejection reasons | ✓ | - |
+| Settlement schedule | - | ✓ |
+
+### Data Accuracy
+- [ ] Reports match wallet transactions exactly
+- [ ] Real-time data (< 1 minute delay)
+- [ ] Historical data available for 12 months
 
 ## Technical Notes
 
+<details>
+<summary>Implementation Details (For Dev)</summary>
+
 **API Endpoints:**
 ```
-GET /api/v1/billing/history?from={date}&to={date}&page=1&limit=20
-GET /api/v1/billing/report?campaign_id={id}&period=daily
-GET /api/v1/billing/summary?period=month
+# Advertiser
+GET /api/v1/billing/history?from=2026-01-01&to=2026-01-31
+GET /api/v1/billing/report/campaign/{id}
+GET /api/v1/billing/summary?period=monthly
+GET /api/v1/billing/export?format=csv
+
+# Supplier
+GET /api/v1/revenue/history?from=2026-01-01&to=2026-01-31
+GET /api/v1/revenue/report/store/{id}
+GET /api/v1/revenue/summary?period=monthly
+GET /api/v1/revenue/settlement-schedule
+GET /api/v1/revenue/export?format=csv
 ```
 
-**Billing History Response:**
-```json
-{
-    "data": [
-        {
-            "id": "uuid",
-            "campaign_id": "uuid",
-            "campaign_name": "Summer Sale",
-            "impressions": 1,
-            "cost": 0.005,
-            "store_name": "Store A",
-            "created_at": "2026-02-02T10:30:00Z"
-        }
-    ],
-    "pagination": {
-        "page": 1,
-        "limit": 20,
-        "total": 10000
-    }
-}
-```
+**Performance Considerations:**
+- Pre-aggregate daily summaries in materialized views
+- Cache reports for 5 minutes
+- Paginate transaction lists (max 100 per page)
 
-**Report Response:**
-```json
-{
-    "campaign_id": "uuid",
-    "campaign_name": "Summer Sale",
-    "period": "2026-02",
-    "summary": {
-        "total_impressions": 100000,
-        "total_cost": 500.00,
-        "avg_cpm": 5.00
-    },
-    "by_day": [
-        {"date": "2026-02-01", "impressions": 5000, "cost": 25.00},
-        {"date": "2026-02-02", "impressions": 4500, "cost": 22.50}
-    ],
-    "by_store": [
-        {"store_id": "uuid", "store_name": "Store A", "impressions": 50000, "cost": 250.00}
-    ]
-}
-```
-
-**Summary Response:**
-```json
-{
-    "period": "2026-02",
-    "total_spent": 1500.00,
-    "total_impressions": 300000,
-    "active_campaigns": 5,
-    "top_campaigns": [
-        {"id": "uuid", "name": "Campaign A", "spent": 500.00}
-    ]
-}
-```
+</details>
 
 ## Checklist (Subtasks)
 
-- [ ] Implement Billing History endpoint
-- [ ] Implement Campaign Report endpoint
-- [ ] Implement Summary endpoint
-- [ ] Add date range filtering
-- [ ] Add pagination
-- [ ] Optimize queries với indexes
-- [ ] Caching for frequently accessed reports
-- [ ] Unit tests
-- [ ] Integration tests
+- [ ] Implement billing history endpoint with filtering
+- [ ] Implement campaign report with store breakdown
+- [ ] Implement monthly summary aggregation
+- [ ] Implement revenue history endpoint (suppliers)
+- [ ] Implement settlement schedule view
+- [ ] Add CSV export functionality
+- [ ] Add PDF invoice generation (Phase 2)
+- [ ] Create materialized views for aggregations
+- [ ] Add caching layer
+- [ ] Unit/integration tests
 
 ## Updates
 
@@ -113,3 +110,5 @@ GET /api/v1/billing/summary?period=month
 Dev comments will be added here by AI when updating via chat.
 Format: **YYYY-MM-DD HH:MM** - @author: Message
 -->
+
+**2026-02-04 19:25** - Rewrote to cover both Advertiser and Supplier perspectives with specific report types.

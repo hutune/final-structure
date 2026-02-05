@@ -19,93 +19,118 @@ clickup_task_id: "86ewgdm7c"
 ## User Story
 
 **As an** Advertiser,
-**I want** xem stores bị block và được đề xuất alternatives,
-**So that** tôi có thể tối ưu reach của campaign.
+**I want** to understand why certain stores are blocked,
+**So that** I can find alternative stores to maximize my campaign reach.
+
+## Business Context
+
+Transparency builds trust and helps optimization:
+- Advertisers understand exclusion reasons
+- Clear explanation of supplier blocking rules
+- Alternative store suggestions maintain reach
+- No surprises when campaign launches
+
+## Business Rules
+
+> Reference: [04-business-rules-campaign.md](file:///Users/mazhnguyen/Desktop/final-structure/docs/_rmn-arms-docs/business-rules%20(en%20ver)/04-business-rules-campaign.md)
+
+### Conflict Visibility
+| Information | Shown to Advertiser |
+|-------------|---------------------|
+| Store name | Yes |
+| Blocking reason | Yes (general) |
+| Rule type | Yes |
+| Exact rule value | Partial (e.g., "competitor brand") |
+
+### Alternative Suggestion Criteria
+| Factor | Weight |
+|--------|--------|
+| Same region | 40% |
+| Same store type | 30% |
+| Similar device count | 20% |
+| Similar traffic | 10% |
+
+### Alternative Limits
+- Max 10 alternatives per excluded store
+- Only show stores without conflicts
+- Only show stores in same region by default
 
 ## Acceptance Criteria
 
-- [ ] GET `/api/v1/campaigns/{id}/conflicts` trả về excluded stores
-- [ ] Mỗi conflict có reason rõ ràng
-- [ ] Suggest alternative stores không có conflict
-- [ ] Alternatives có similar attributes (region, type)
+### For Conflict View
+- [ ] View list of excluded stores
+- [ ] See exclusion reason for each
+- [ ] Know which rule type caused exclusion
+- [ ] Total impact on reach shown
+
+### For Alternatives
+- [ ] Suggest similar stores without conflicts
+- [ ] Show store attributes (region, type, devices)
+- [ ] One-click to add alternative to campaign
+- [ ] Show similarity score
+
+### For Campaign Optimization
+- [ ] Compare reach: original vs after exclusions
+- [ ] Compare reach: with alternatives added
+- [ ] Help advertisers maximize coverage
 
 ## Technical Notes
 
-**API Endpoint:**
+<details>
+<summary>Implementation Details (For Dev)</summary>
+
+**API Endpoints:**
 ```
 GET /api/v1/campaigns/{id}/conflicts
+GET /api/v1/campaigns/{id}/alternatives
+POST /api/v1/campaigns/{id}/stores/{store_id}  # Add alternative
 ```
 
-**Response:**
+**Conflicts Response:**
 ```json
 {
-    "campaign_id": "uuid",
-    "excluded_stores": [
-        {
-            "store_id": "uuid",
-            "store_name": "Samsung Dealer Le Loi",
-            "region": "Ho Chi Minh",
-            "store_type": "electronics",
-            "conflicts": [
-                {
-                    "rule_type": "brand",
-                    "rule_value": "Apple",
-                    "reason": "Store blocks competitor brand 'Apple'"
-                }
-            ]
-        }
-    ],
-    "alternatives": [
-        {
-            "store_id": "uuid",
-            "store_name": "Electronics Mall Nguyen Hue",
-            "region": "Ho Chi Minh",
-            "store_type": "mall",
-            "similarity_score": 0.85,
-            "device_count": 5
-        }
-    ]
-}
-```
-
-**Alternative Suggestion Algorithm:**
-```go
-func (e *BlockingEngine) SuggestAlternatives(campaign *Campaign, excludedStores []Store) []Store {
-    var alternatives []Store
-
-    for _, excluded := range excludedStores {
-        // Find stores in same region, similar type, no conflicts
-        candidates := e.storeRepo.FindByRegionAndType(excluded.Region, excluded.StoreType)
-
-        for _, candidate := range candidates {
-            // Skip if already targeted or excluded
-            if campaign.HasStore(candidate.ID) {
-                continue
-            }
-
-            // Check for conflicts
-            conflicts := e.CheckConflicts(campaign, []string{candidate.ID})
-            if len(conflicts) == 0 {
-                alternatives = append(alternatives, candidate)
-            }
-        }
+  "campaign_id": "uuid",
+  "total_stores_targeted": 50,
+  "total_stores_excluded": 5,
+  "reach_impact": "-10%",
+  "excluded_stores": [
+    {
+      "store_id": "uuid",
+      "store_name": "Samsung Store Le Loi",
+      "region": "Ho Chi Minh",
+      "conflict_type": "brand",
+      "conflict_reason": "Store blocks competitor brand"
     }
-
-    // Sort by similarity/relevance
-    sort.Sort(BySimilarity(alternatives))
-
-    return alternatives[:min(10, len(alternatives))]
+  ]
 }
 ```
+
+**Alternatives Response:**
+```json
+{
+  "alternatives": [
+    {
+      "store_id": "uuid",
+      "store_name": "Electronics Mall Nguyen Hue",
+      "region": "Ho Chi Minh",
+      "store_type": "mall",
+      "device_count": 5,
+      "similarity_score": 0.85
+    }
+  ]
+}
+```
+
+</details>
 
 ## Checklist (Subtasks)
 
 - [ ] Implement Get Conflicts endpoint
 - [ ] Include conflict reasons
+- [ ] Calculate reach impact
 - [ ] Implement alternative suggestion algorithm
-- [ ] Find stores by region and type
-- [ ] Calculate similarity score
-- [ ] Return top 10 alternatives
+- [ ] Calculate similarity scores
+- [ ] Implement add alternative endpoint
 - [ ] Unit tests
 - [ ] Integration tests
 
@@ -115,3 +140,5 @@ func (e *BlockingEngine) SuggestAlternatives(campaign *Campaign, excludedStores 
 Dev comments will be added here by AI when updating via chat.
 Format: **YYYY-MM-DD HH:MM** - @author: Message
 -->
+
+**2026-02-05 09:24** - Rewrote with conflict visibility rules and alternative suggestion criteria from campaign business rules.

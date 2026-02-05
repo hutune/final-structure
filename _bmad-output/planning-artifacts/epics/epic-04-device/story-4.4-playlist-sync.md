@@ -19,95 +19,118 @@ clickup_task_id: "86ewgdmcw"
 ## User Story
 
 **As a** Device,
-**I want** nhận playlist cần phát từ server,
-**So that** tôi biết phát quảng cáo nào và khi nào.
+**I want** to receive the correct ads to play at the right times,
+**So that** I deliver the advertising content as scheduled.
+
+## Business Context
+
+Playlist sync ensures devices always have the right content:
+- Content pre-distributed before campaign starts (24h lead time)
+- Playlists updated when campaigns change
+- Fallback content when no ads scheduled
+- Offline caching for network interruptions
+
+## Business Rules
+
+> Reference: [05-business-rules-device.md](file:///Users/mazhnguyen/Desktop/final-structure/docs/_rmn-arms-docs/business-rules%20(en%20ver)/05-business-rules-device.md)
+
+### Playlist Generation
+1. Get active campaigns targeting device's store
+2. Apply blocking rules (exclude blocked brands)
+3. Sort by priority and bid
+4. Build playlist with schedule constraints
+5. Include CDN URLs for content
+
+### Sync Timing
+| Event | Action |
+|-------|--------|
+| Campaign starts | Push new playlist |
+| Campaign ends | Remove from playlist |
+| Campaign paused | Remove from playlist |
+| Budget exhausted | Remove from playlist |
+| Heartbeat response | Include playlist_updated flag |
+
+### Content Pre-Distribution
+- Content pushed 24 hours before campaign starts
+- Device downloads and caches locally
+- Confirmation sent to server
+- Campaign only starts if content ready
+
+### Playlist Validity
+- Playlists valid for 1 hour max
+- Device re-fetches if expired
+- Server can force refresh via heartbeat
 
 ## Acceptance Criteria
 
-- [ ] GET `/api/v1/devices/{id}/playlist` trả về current playlist
-- [ ] Playlist chứa content items, schedule, priority order
-- [ ] CDN URLs được include cho content files
-- [ ] Device nhận notification khi playlist updated
-- [ ] Playlist generation dựa trên active campaigns targeting store
+### For Content Delivery
+- [ ] Playlist includes CDN URLs for all content
+- [ ] Content pre-distributed 24h before start
+- [ ] Device caches content locally
+- [ ] Fallback content when no ads available
+
+### For Real-time Updates
+- [ ] Playlist updated within 5 minutes of campaign change
+- [ ] Push notification via Kafka
+- [ ] Heartbeat response indicates update needed
+
+### For Performance
+- [ ] Playlist generation < 100ms
+- [ ] CDN URLs with appropriate cache headers
+- [ ] Support offline playback from cache
 
 ## Technical Notes
+
+<details>
+<summary>Implementation Details (For Dev)</summary>
 
 **API Endpoint:**
 ```
 GET /api/v1/devices/{id}/playlist
 ```
 
-**Playlist Response:**
+**Response:**
 ```json
 {
-    "playlist_id": "uuid",
-    "device_id": "uuid",
-    "generated_at": "2026-02-02T10:00:00Z",
-    "valid_until": "2026-02-02T11:00:00Z",
-    "items": [
-        {
-            "position": 1,
-            "campaign_id": "uuid",
-            "content_id": "uuid",
-            "content_url": "https://cdn.example.com/content/abc.mp4",
-            "duration_seconds": 15,
-            "content_type": "video",
-            "schedule": {
-                "start_time": "09:00",
-                "end_time": "21:00"
-            },
-            "priority": 1
-        }
-    ],
-    "default_content": {
-        "content_url": "https://cdn.example.com/default.mp4",
-        "duration_seconds": 30
+  "playlist_id": "uuid",
+  "device_id": "uuid",
+  "generated_at": "2026-02-05T10:00:00Z",
+  "valid_until": "2026-02-05T11:00:00Z",
+  "items": [
+    {
+      "position": 1,
+      "campaign_id": "uuid",
+      "content_id": "uuid",
+      "content_url": "https://cdn.example.com/content/abc.mp4",
+      "duration_seconds": 15,
+      "content_type": "video",
+      "schedule": {"start_time": "09:00", "end_time": "21:00"},
+      "priority": 1
     }
+  ],
+  "default_content": {
+    "content_url": "https://cdn.example.com/default.mp4",
+    "duration_seconds": 30
+  }
 }
 ```
 
-**Playlist Generation Logic:**
-```go
-func (s *PlaylistService) GeneratePlaylist(deviceID string) *Playlist {
-    device := s.deviceRepo.Get(deviceID)
-    store := s.storeRepo.Get(device.StoreID)
+**Kafka Topics:**
+- `playlist-updates` - Notify devices of changes
+- `campaign.started/paused/completed` - Trigger regeneration
 
-    // Get active campaigns targeting this store
-    campaigns := s.campaignRepo.FindActiveForStore(store.ID)
-
-    // Filter by blocking rules
-    campaigns = s.blockingEngine.FilterCampaigns(campaigns, store.ID)
-
-    // Sort by priority/bid
-    sort.Sort(ByPriority(campaigns))
-
-    // Generate playlist items
-    items := s.buildPlaylistItems(campaigns)
-
-    return &Playlist{
-        DeviceID: deviceID,
-        Items: items,
-        GeneratedAt: time.Now(),
-        ValidUntil: time.Now().Add(1 * time.Hour),
-    }
-}
-```
-
-**Kafka Notification:**
-- Topic: `playlist-updates`
-- Device subscribes to updates
-- Push notification on campaign changes
+</details>
 
 ## Checklist (Subtasks)
 
-- [ ] Implement Get Playlist endpoint
 - [ ] Implement playlist generation logic
-- [ ] Integrate với Campaign Service
-- [ ] Integrate với Blocking Engine
-- [ ] Generate CDN URLs
-- [ ] Implement playlist caching
+- [ ] Integrate with Campaign Service
+- [ ] Integrate with Blocking Engine
+- [ ] Generate CDN URLs with signatures
+- [ ] Implement content pre-distribution
 - [ ] Setup Kafka notifications
 - [ ] Default content fallback
+- [ ] Playlist caching (Redis)
 - [ ] Unit tests
 - [ ] Integration tests
 
@@ -117,3 +140,5 @@ func (s *PlaylistService) GeneratePlaylist(deviceID string) *Playlist {
 Dev comments will be added here by AI when updating via chat.
 Format: **YYYY-MM-DD HH:MM** - @author: Message
 -->
+
+**2026-02-05 09:17** - Rewrote with playlist generation, pre-distribution, and real-time updates from device business rules.

@@ -18,93 +18,111 @@ clickup_task_id: "86ewgdmdf"
 
 ## User Story
 
-**As a** System,
-**I want** tạo proof-of-play từ playback logs,
-**So that** có bằng chứng cho billing và giải quyết tranh chấp.
+**As an** Advertiser,
+**I want** verifiable proof that my ads were actually played,
+**So that** I have evidence for billing and can resolve any disputes.
+
+## Business Context
+
+Proof-of-play builds advertiser trust:
+- Provides auditable evidence of ad delivery
+- Contains immutable records for dispute resolution
+- Includes geographic and temporal breakdown
+- Required for premium advertisers and agency contracts
+
+## Business Rules
+
+> Reference: [06-business-rules-impression.md](file:///Users/mazhnguyen/Desktop/final-structure/docs/_rmn-arms-docs/business-rules%20(en%20ver)/06-business-rules-impression.md)
+
+### Proof Components
+| Component | Description | Source |
+|-----------|-------------|--------|
+| Screenshot | Frame capture during playback | Device |
+| Signature | RSA-signed playback hash | Device |
+| Timestamp | Server-verified time | System |
+| Location | GPS coordinates | Device |
+| Duration | Actual vs expected | Device |
+
+### Screenshot Requirements
+- Captured at random point during playback
+- Stored as compressed JPEG (quality 75)
+- SHA-256 hash included in proof
+- Retained for 90 days
+
+### Aggregation Schedule
+- **Daily:** Midnight UTC aggregation job
+- **Real-time:** Available for current day
+- **Immutable:** Once generated, cannot be modified
+
+### Dispute Resolution
+| Dispute Type | Evidence Required |
+|--------------|-------------------|
+| Missing impression | Screenshot + log |
+| Wrong duration | Playback log + device log |
+| Wrong location | GPS + store geofence |
+| Fraudulent | Full audit trail |
 
 ## Acceptance Criteria
 
-- [ ] Daily aggregation job tạo proof-of-play records
-- [ ] Proof-of-play chứa: total impressions, unique devices, hourly breakdown
-- [ ] GET `/api/v1/campaigns/{id}/proof-of-play` trả về report
-- [ ] Records là immutable cho audit trail
-- [ ] Geographic distribution được include
+### For Advertisers
+- [ ] View daily proof-of-play reports
+- [ ] See hourly breakdown of impressions
+- [ ] Geographic distribution by region/store
+- [ ] Download proof document (PDF)
+- [ ] Access screenshots on demand
+
+### For Reporting
+- [ ] Total impressions per day
+- [ ] Unique devices and stores
+- [ ] Total playback duration
+- [ ] Hourly and geographic breakdown
+
+### For Disputes
+- [ ] Records are immutable after generation
+- [ ] Full audit trail for each impression
+- [ ] Screenshots available for 90 days
 
 ## Technical Notes
 
-**API Endpoint:**
-```
-GET /api/v1/campaigns/{id}/proof-of-play?date=2026-02-02
-GET /api/v1/campaigns/{id}/proof-of-play?from=2026-02-01&to=2026-02-28
-```
+<details>
+<summary>Implementation Details (For Dev)</summary>
 
-**Database Table:**
-```sql
-CREATE TABLE proof_of_play (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    campaign_id UUID NOT NULL REFERENCES campaigns(id),
-    date DATE NOT NULL,
-    total_impressions INT DEFAULT 0,
-    unique_devices INT DEFAULT 0,
-    unique_stores INT DEFAULT 0,
-    total_duration_seconds INT DEFAULT 0,
-    hourly_breakdown JSONB,
-    geographic_breakdown JSONB,
-    created_at TIMESTAMP DEFAULT NOW(),
-    UNIQUE(campaign_id, date)
-);
-
-CREATE INDEX idx_pop_campaign_date ON proof_of_play(campaign_id, date);
+**API Endpoints:**
+```
+GET /api/v1/campaigns/{id}/proof-of-play?date=2026-02-05
+GET /api/v1/campaigns/{id}/proof-of-play?from=...&to=...
+GET /api/v1/impressions/{id}/screenshot
+GET /api/v1/campaigns/{id}/proof-of-play/download  # PDF
 ```
 
-**Hourly Breakdown Format:**
+**Response:**
 ```json
 {
-    "00": 150,
-    "01": 120,
-    "09": 890,
-    "10": 1200,
-    "18": 1500,
-    "19": 1800
+  "campaign_id": "uuid",
+  "date": "2026-02-05",
+  "total_impressions": 15000,
+  "unique_devices": 45,
+  "unique_stores": 12,
+  "total_duration_seconds": 225000,
+  "hourly_breakdown": {"09": 890, "10": 1200, ...},
+  "geographic_breakdown": {
+    "regions": {"Ho Chi Minh": 8000, "Ha Noi": 5000},
+    "stores": [{"store_id": "uuid", "name": "...", "impressions": 2000}]
+  }
 }
 ```
 
-**Geographic Breakdown:**
-```json
-{
-    "regions": {
-        "Ho Chi Minh": 5000,
-        "Ha Noi": 3000,
-        "Da Nang": 1000
-    },
-    "stores": [
-        {"store_id": "uuid", "name": "Store A", "impressions": 2000}
-    ]
-}
-```
-
-**Daily Aggregation Job:**
-```go
-func (s *ProofOfPlayService) GenerateDaily(date time.Time) {
-    campaigns := s.campaignRepo.FindRunningOnDate(date)
-    for _, c := range campaigns {
-        logs := s.playbackRepo.GetLogsByCampaignAndDate(c.ID, date)
-        pop := s.aggregate(logs)
-        s.popRepo.Create(pop)
-    }
-}
-```
+</details>
 
 ## Checklist (Subtasks)
 
-- [ ] Tạo proof_of_play table migration
-- [ ] Implement aggregation logic
-- [ ] Setup daily cron job (midnight)
-- [ ] Implement Get Proof-of-Play endpoint
-- [ ] Implement date range queries
-- [ ] Add geographic breakdown
-- [ ] Ensure immutability (no updates)
-- [ ] Unit tests
+- [ ] Create proof_of_play table (immutable)
+- [ ] Implement daily aggregation job
+- [ ] Aggregate by hour, region, store
+- [ ] Implement proof-of-play API
+- [ ] Screenshot storage (S3 + 90-day retention)
+- [ ] PDF export generation
+- [ ] Unit tests for aggregation
 - [ ] Integration tests
 
 ## Updates
@@ -113,3 +131,5 @@ func (s *ProofOfPlayService) GenerateDaily(date time.Time) {
 Dev comments will be added here by AI when updating via chat.
 Format: **YYYY-MM-DD HH:MM** - @author: Message
 -->
+
+**2026-02-05 09:17** - Rewrote with proof components, screenshot requirements, and dispute resolution from impression business rules.

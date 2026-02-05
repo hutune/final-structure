@@ -18,91 +18,114 @@ clickup_task_id: "86ewgdmh3"
 
 ## User Story
 
-**As a** System,
-**I want** tự động start/stop campaigns theo schedule,
-**So that** campaigns chạy đúng thời gian đã đặt.
+**As an** Advertiser,
+**I want** my campaigns to automatically start and stop at the scheduled times,
+**So that** I don't have to manually manage campaign timing.
+
+## Business Context
+
+Reliable scheduling is crucial for advertiser trust:
+- Campaigns must start exactly at the scheduled time
+- End dates must be respected to prevent over-delivery
+- Advertisers plan marketing around precise timing
+
+## Business Rules
+
+> Reference: [04-business-rules-campaign.md](file:///Users/mazhnguyen/Desktop/final-structure/docs/_rmn-arms-docs/business-rules%20(en%20ver)/04-business-rules-campaign.md)
+
+### Auto-Start Rules
+- Campaign transitions: `SCHEDULED → ACTIVE` at `start_date`
+- Checked every **1 minute**
+- Content pre-distributed to devices **24 hours before** start
+
+### Auto-Complete Rules
+- Campaign transitions: `ACTIVE → COMPLETED` at `end_date`
+- Unused budget automatically released to wallet
+- Final impression count locked
+
+### Timezone Handling
+- All dates stored in **UTC**
+- Displayed in advertiser's local timezone
+- Scheduler operates in UTC
+
+### Content Pre-Distribution
+```
+24 hours before start_date:
+  1. Compile playlist for each device
+  2. Push content to devices
+  3. Devices cache content locally
+  4. Confirm ready status
+```
 
 ## Acceptance Criteria
 
-- [ ] Campaigns với start_date = today và status = scheduled tự động chuyển sang running
-- [ ] Campaigns với end_date = today và status = running tự động chuyển sang completed
-- [ ] Kafka event `campaign.started` được publish khi campaign starts
-- [ ] Kafka event `campaign.completed` được publish khi campaign ends
-- [ ] Scheduler job chạy mỗi phút
-- [ ] Timezone handling đúng
+### For Advertisers
+- [ ] Campaign starts within **1 minute** of scheduled start_date
+- [ ] Campaign ends at exact end_date (no extra impressions after)
+- [ ] Email notification when campaign starts
+- [ ] Email notification when campaign ends with summary
+
+### For System
+- [ ] Scheduler runs every minute with high availability
+- [ ] Kafka events published on transitions
+- [ ] Device playlists updated 24 hours before start
+- [ ] Unused budget released on completion
+
+### For Reliability
+- [ ] Scheduler is idempotent (handles duplicates)
+- [ ] Handles timezone edge cases (DST changes)
+- [ ] Graceful handling of large batch transitions
 
 ## Technical Notes
 
-**Scheduler Implementation:**
+<details>
+<summary>Implementation Details (For Dev)</summary>
+
+**Scheduler Service:**
 ```go
-// Cron job chạy mỗi phút
 func (s *Scheduler) Run() {
     ticker := time.NewTicker(1 * time.Minute)
     for range ticker.C {
-        s.processScheduledCampaigns()
-        s.processExpiredCampaigns()
-    }
-}
-
-func (s *Scheduler) processScheduledCampaigns() {
-    campaigns := s.repo.FindScheduledCampaignsToStart(time.Now())
-    for _, c := range campaigns {
-        c.Status = "running"
-        s.repo.Update(c)
-        s.eventPublisher.Publish("campaign.started", c)
-    }
-}
-
-func (s *Scheduler) processExpiredCampaigns() {
-    campaigns := s.repo.FindRunningCampaignsToEnd(time.Now())
-    for _, c := range campaigns {
-        c.Status = "completed"
-        s.repo.Update(c)
-        s.eventPublisher.Publish("campaign.completed", c)
+        s.startScheduledCampaigns()
+        s.completeExpiredCampaigns()
+        s.preDistributeContent() // 24h before
     }
 }
 ```
 
-**SQL Queries:**
+**Queries:**
 ```sql
--- Find campaigns to start
+-- Campaigns to start
 SELECT * FROM campaigns
-WHERE status = 'scheduled'
+WHERE status = 'SCHEDULED'
 AND start_date <= NOW();
 
--- Find campaigns to end
-SELECT * FROM campaigns
-WHERE status = 'running'
+-- Campaigns to complete
+SELECT * FROM campaigns  
+WHERE status = 'ACTIVE'
 AND end_date <= NOW();
+
+-- Pre-distribution (24h window)
+SELECT * FROM campaigns
+WHERE status = 'SCHEDULED'
+AND start_date BETWEEN NOW() AND NOW() + INTERVAL '24 hours'
+AND content_distributed = false;
 ```
 
-**Timezone Handling:**
-- Store dates in UTC
-- Convert to user timezone for display
-- Scheduler operates in UTC
-
-**Kafka Events:**
-```json
-{
-    "event": "campaign.started",
-    "campaign_id": "uuid",
-    "advertiser_id": "uuid",
-    "timestamp": "2026-02-02T10:00:00Z"
-}
-```
+</details>
 
 ## Checklist (Subtasks)
 
 - [ ] Implement scheduler service
-- [ ] Implement processScheduledCampaigns
-- [ ] Implement processExpiredCampaigns
-- [ ] Setup cron job (1 minute interval)
-- [ ] Implement Kafka event publishing
-- [ ] Handle timezone correctly
-- [ ] Add logging for scheduler actions
-- [ ] Handle edge cases (campaigns spanning midnight)
-- [ ] Unit tests cho scheduler logic
-- [ ] Integration tests
+- [ ] Implement auto-start logic
+- [ ] Implement auto-complete with budget release
+- [ ] Implement content pre-distribution (24h before)
+- [ ] Setup 1-minute cron job
+- [ ] Handle timezone correctly (UTC storage)
+- [ ] Kafka event publishing
+- [ ] Email notifications on transitions
+- [ ] Unit tests for scheduler
+- [ ] Integration tests with mock clock
 
 ## Updates
 
@@ -110,3 +133,5 @@ AND end_date <= NOW();
 Dev comments will be added here by AI when updating via chat.
 Format: **YYYY-MM-DD HH:MM** - @author: Message
 -->
+
+**2026-02-05 09:08** - Rewrote with timing guarantees, pre-distribution, and timezone handling from business rules.

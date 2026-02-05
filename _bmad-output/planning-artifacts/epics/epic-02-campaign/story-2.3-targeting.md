@@ -19,83 +19,134 @@ clickup_task_id: "86ewgdmfv"
 ## User Story
 
 **As an** Advertiser,
-**I want** chọn cửa hàng/khu vực để hiển thị quảng cáo,
-**So that** campaign của tôi chỉ chạy ở những nơi tôi muốn.
+**I want** to choose exactly which stores display my ads,
+**So that** I can target customers in locations most relevant to my products.
+
+## Business Context
+
+Effective targeting maximizes advertiser ROI:
+- Geographic targeting reaches local customers
+- Store type targeting matches product demographics
+- Competitor blocking prevents ads appearing next to rival brands
+- Clear blocked store visibility helps advertisers make decisions
+
+## Business Rules
+
+> Reference: [04-business-rules-campaign.md](file:///Users/mazhnguyen/Desktop/final-structure/docs/_rmn-arms-docs/business-rules%20(en%20ver)/04-business-rules-campaign.md)
+
+### Targeting Methods
+1. **Manual Selection:** Pick individual stores (1-1000)
+2. **Criteria-Based:** Select by region, store type, foot traffic, distance
+
+### Criteria Options
+```json
+{
+  "regions": ["North", "South", "Central"],
+  "store_types": ["Supermarket", "Mall", "Convenience"],
+  "min_foot_traffic": 5000,
+  "max_distance_km": 50,
+  "from_location": { "lat": 10.762622, "lng": 106.660172 }
+}
+```
+
+### Store Eligibility
+A store is eligible if:
+- Store status = ACTIVE
+- Store has ≥ 1 ACTIVE device
+- Store NOT blocked by competitor rules
+
+### Competitor Blocking
+When advertiser selects stores:
+```
+FOR EACH store IN selected_stores:
+  IF store has blocking_rule matching campaign.brand_name:
+    MOVE store from target_stores to blocked_stores
+    SET exclusion_reason = "Competitor blocking: {brand}"
+```
+
+### Estimation Formulas
+```
+estimated_impressions = SUM(
+  store.daily_foot_traffic
+  × store.device_count
+  × store.avg_dwell_minutes / 60
+  × campaign.duration_days
+) × 0.7 (conservative factor)
+
+estimated_cost = estimated_impressions × avg_CPM / 1000
+```
 
 ## Acceptance Criteria
 
-- [ ] GET `/api/v1/stores` trả về danh sách stores với filters
-- [ ] Filter stores theo region, store_type
-- [ ] POST `/api/v1/campaigns/{id}/stores` assign stores to campaign
-- [ ] GET `/api/v1/campaigns/{id}/stores` trả về targeted và excluded stores
-- [ ] Blocking rules được check khi assign stores
-- [ ] Conflicting stores tự động được exclude
+### For Store Discovery
+- [ ] Store list with search, filter by region/type
+- [ ] Store cards show: name, location, device count, foot traffic
+- [ ] Map view available for geographic selection
+- [ ] Store health indicator (devices online/offline)
+
+### For Targeting
+- [ ] Can select stores individually (checkboxes)
+- [ ] Can apply criteria filters
+- [ ] Maximum 1000 stores per campaign
+- [ ] Clear indicator of selected count
+
+### For Blocking Visibility
+- [ ] Blocked stores shown in separate "Excluded" section
+- [ ] Each blocked store shows clear reason
+- [ ] Tip: "You may be able to remove blocking by contacting store owner"
+
+### For Estimation
+- [ ] Show estimated impressions based on selection
+- [ ] Show estimated cost vs budget
+- [ ] Warning if estimated cost exceeds budget
 
 ## Technical Notes
 
+<details>
+<summary>Implementation Details (For Dev)</summary>
+
 **API Endpoints:**
 ```
-GET  /api/v1/stores?region={region}&type={store_type}&status=active
-POST /api/v1/campaigns/{id}/stores
+GET  /api/v1/stores?region=...&type=...&min_traffic=...
 GET  /api/v1/campaigns/{id}/stores
+POST /api/v1/campaigns/{id}/stores  (bulk assign)
 DELETE /api/v1/campaigns/{id}/stores/{store_id}
+POST /api/v1/campaigns/{id}/estimate  (calculate estimates)
 ```
 
-**Database Table:**
-```sql
-CREATE TABLE campaign_stores (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    campaign_id UUID NOT NULL REFERENCES campaigns(id),
-    store_id UUID NOT NULL REFERENCES stores(id),
-    status VARCHAR(50) DEFAULT 'targeted', -- targeted, excluded
-    exclusion_reason TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    UNIQUE(campaign_id, store_id)
-);
-
-CREATE INDEX idx_campaign_stores_campaign ON campaign_stores(campaign_id);
-```
-
-**Assign Stores Request:**
+**Response with Blocking:**
 ```json
 {
-    "store_ids": ["uuid1", "uuid2", "uuid3"],
-    "target_by": "specific" // or "region", "store_type"
+  "targeted": [
+    { "store_id": "uuid1", "name": "Store A", "devices": 5 }
+  ],
+  "blocked": [
+    { 
+      "store_id": "uuid2", 
+      "name": "Store B", 
+      "reason": "Competitor blocking: Apple" 
+    }
+  ],
+  "estimates": {
+    "impressions": 50000,
+    "cost": 250.00,
+    "cpm": 5.00
+  }
 }
 ```
 
-**Stores Response with Conflict Info:**
-```json
-{
-    "targeted": [
-        {"store_id": "uuid1", "name": "Store A"}
-    ],
-    "excluded": [
-        {
-            "store_id": "uuid2",
-            "name": "Store B",
-            "reason": "Blocking rule: competitor brand Apple"
-        }
-    ]
-}
-```
-
-**Integration với Blocking Engine (Epic 7):**
-- Call BlockingEngine.checkConflicts(campaign, stores)
-- Auto-exclude conflicting stores
-- Return exclusion reasons
+</details>
 
 ## Checklist (Subtasks)
 
-- [ ] Implement stores listing với filters
-- [ ] Tạo campaign_stores table migration
-- [ ] Implement assign stores endpoint
-- [ ] Implement get campaign stores endpoint
-- [ ] Implement remove store from campaign
-- [ ] Integrate với Blocking Engine (can be mocked initially)
-- [ ] Handle bulk store assignment
-- [ ] Unit tests
-- [ ] Integration tests với blocking
+- [ ] Implement store listing with filters
+- [ ] Implement geographic search (lat/lng + radius)
+- [ ] Implement bulk store assignment
+- [ ] Integrate with Blocking Engine (EPIC-07)
+- [ ] Implement estimation calculation
+- [ ] Create campaign_stores junction table
+- [ ] Unit tests for targeting logic
+- [ ] Integration tests with blocking
 
 ## Updates
 
@@ -103,3 +154,5 @@ CREATE INDEX idx_campaign_stores_campaign ON campaign_stores(campaign_id);
 Dev comments will be added here by AI when updating via chat.
 Format: **YYYY-MM-DD HH:MM** - @author: Message
 -->
+
+**2026-02-04 19:35** - Rewrote with targeting methods, competitor blocking, and estimation formulas from business rules.
